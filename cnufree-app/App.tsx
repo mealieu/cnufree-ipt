@@ -1,0 +1,30 @@
+import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import {
+  useFonts,
+  DMSans_400Regular,
+  DMSans_400Regular_Italic,
+  DMSans_500Medium,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
+import { COLORS } from './src/constants/colors';
+
+export default function App() {
+  let [fontsLoaded] = useFonts({
+    DMSans_400Regular,
+    DMSans_400Regular_Italic,
+    DMSans_500Medium,
+    DMSans_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.cream }}>
+        <ActivityIndicator size="large" color={COLORS.darkGreen} />
+      </View>
+    );
+  }
+
+  return <WelcomeScreen />;
+}
