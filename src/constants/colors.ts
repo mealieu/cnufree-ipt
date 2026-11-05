@@ -3,6 +3,58 @@ export const COLORS = {
   darkGreen: '#1A5A31',
   mutedGreen: '#5C7057', // Button background
   lightMutedGreen: '#C5CBB7', // Approximated from reference for side cards
-  textDark: '#000000',
+  textDark: '#121A14',
+  textMuted: '#425547',
+  textSubtle: '#5F7364',
   white: '#FFFFFF',
-};
+
+  // Dashboard Specific Tokens
+  scheduleCardBg: '#21432E',
+  scheduleGreenText: '#4ADE80',
+  scheduleSubText: '#9FCEAA',
+  scheduleBarFree: '#D1EFE0',
+  scheduleBarBusy: '#27C158',
+  scheduleBarTrack: '#163121',
+
+  // Filters & Tabs
+  filterContainerBg: '#E4EAD9',
+  filterActiveBg: '#1C675C',
+  filterActiveBorder: '#D8B345',
+  filterActiveText: '#FFFFFF',
+  filterInactiveText: '#233427',
+
+  // Timeline & Slider
+  sliderTrackBg: '#DFE7D6',
+  sliderIndicatorBg: '#95D9A9',
+  sliderArrow: '#1D2D21',
+
+  // Best Window Card
+  sageCardBg: '#97AC95',
+  sageCardBorder: '#233226',
+  tealSuggestedBg: '#1C675C',
+  goldBorder: '#D8B345',
+  avatarCircleBg: '#EEF2EA',
+  avatarCircleBorder: '#FFFFFF',
+
+  // Status indicators & Badges
+  freePillBg: '#8FA990',
+  freePillBorder: '#324C36',
+  vacantBadgeBg: '#D8F7E4',
+  vacantBadgeBorder: '#38C172',
+  vacantBadgeText: '#137937',
+  freeIndicatorGreen: '#38C172',
+
+  busyPillBg: '#E9BEBE',
+  busyPillBorder: '#B25D5D',
+  busyBadgeBg: '#FEE5E5',
+  busyBadgeBorder: '#E57373',
+  busyBadgeText: '#C0392B',
+  busyIndicatorRed: '#E57373',
+
+  // Bottom Navigation Bar (HS-02)
+  navBackground: '#8EA78C',
+  navBorderTop: '#243427',
+  navActive: '#133E21',
+  navInactive: '#3C533F',
+  navActiveBg: 'rgba(19, 62, 33, 0.08)',
+};

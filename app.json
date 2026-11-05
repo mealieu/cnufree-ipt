@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "cnufree",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F4F1D8"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cnufree.app",
@@ -36,6 +31,14 @@
     },
     "plugins": [
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F1D8"
+        }
+      ],
       [
         "expo-status-bar",
         {
