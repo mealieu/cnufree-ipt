@@ -452,6 +452,279 @@ export const MARIA_WEEKLY_SCHEDULE: DayScheduleTab[] = [
   },
 ];
 
+export function getWeeklySchedule(weekOffset: number = 0): {
+  weekIndicator: string;
+  days: DayScheduleTab[];
+} {
+  // Base week in Figma mockup: Sunday, October 25, 2026
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const baseSunday = new Date(2026, 9, 25);
+  const targetSunday = new Date(baseSunday);
+  targetSunday.setDate(baseSunday.getDate() + weekOffset * 7);
+
+  const targetMonth = monthNames[targetSunday.getMonth()];
+  const targetDate = targetSunday.getDate();
+  const targetYear = targetSunday.getFullYear();
+  const weekIndicator = `Sunday, ${targetMonth} ${targetDate},${targetYear}`;
+
+  if (weekOffset === 0) {
+    return {
+      weekIndicator: 'Sunday, October 25,2026',
+      days: MARIA_WEEKLY_SCHEDULE,
+    };
+  }
+
+  const dayConfigs = [
+    { id: 'mon', dayAbbrev: 'Mon', dayOffset: -6, dayName: 'Monday' },
+    { id: 'tue', dayAbbrev: 'Tue', dayOffset: -5, dayName: 'Tuesday' },
+    { id: 'wed', dayAbbrev: 'Wed', dayOffset: -4, dayName: 'Wednesday' },
+    { id: 'thu', dayAbbrev: 'Thurs', dayOffset: -3, dayName: 'Thursday' },
+    { id: 'fri', dayAbbrev: 'Fri', dayOffset: -2, dayName: 'Friday' },
+    { id: 'sat', dayAbbrev: 'Sat', dayOffset: -1, dayName: 'Saturday' },
+    { id: 'sun', dayAbbrev: 'Sun', dayOffset: 0, dayName: 'Sunday' },
+  ];
+
+  const days: DayScheduleTab[] = dayConfigs.map((config) => {
+    const d = new Date(targetSunday);
+    d.setDate(targetSunday.getDate() + config.dayOffset);
+    const mName = monthNames[d.getMonth()];
+    const dNum = d.getDate();
+    const fullDate = `${config.dayName}, ${mName} ${dNum}`;
+
+    let items: FriendScheduleItem[] = [];
+    if (config.id === 'tue' || config.id === 'thu') {
+      items = [
+        {
+          id: `${config.id}-1`,
+          title: 'Free - 8:00 AM - 9:00 AM',
+          startTime: '8:00 AM',
+          endTime: '9:00 AM',
+          timeRange: '8:00 AM - 9:00 AM',
+          startHour: 8.0,
+          endHour: 9.0,
+          isBusy: false,
+        },
+        {
+          id: `${config.id}-2`,
+          title: 'Accounting',
+          startTime: '9:00',
+          endTime: '10:30',
+          timeRange: '9:00–10:30',
+          room: 'B312',
+          startHour: 9.0,
+          endHour: 10.5,
+          isBusy: true,
+        },
+        {
+          id: `${config.id}-3`,
+          title: 'Free - 11:00 AM - 1:00 PM',
+          startTime: '11:00 AM',
+          endTime: '1:00 PM',
+          timeRange: '11:00 AM - 1:00 PM',
+          startHour: 11.0,
+          endHour: 13.0,
+          isBusy: false,
+        },
+        {
+          id: `${config.id}-4`,
+          title: 'Financial Management',
+          startTime: '1:30',
+          endTime: '3:00',
+          timeRange: '1:30 -3:00',
+          room: 'RB212',
+          startHour: 13.5,
+          endHour: 15.0,
+          isBusy: true,
+        },
+        {
+          id: `${config.id}-5`,
+          title: 'Free - 3:30 PM - 6:00 PM',
+          startTime: '3:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '3:30 PM - 6:00 PM',
+          startHour: 15.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    } else if (config.id === 'mon' || config.id === 'wed') {
+      items = [
+        {
+          id: `${config.id}-1`,
+          title: 'Free - 8:00 AM - 9:30 AM',
+          startTime: '8:00 AM',
+          endTime: '9:30 AM',
+          timeRange: '8:00 AM - 9:30 AM',
+          startHour: 8.0,
+          endHour: 9.5,
+          isBusy: false,
+        },
+        {
+          id: `${config.id}-2`,
+          title: config.id === 'mon' ? 'Database Systems' : 'Business Analytics',
+          startTime: '9:30',
+          endTime: '11:30',
+          timeRange: '9:30–11:30',
+          room: config.id === 'mon' ? 'D214' : 'BA301',
+          startHour: 9.5,
+          endHour: 11.5,
+          isBusy: true,
+        },
+        {
+          id: `${config.id}-3`,
+          title: 'Free - 11:30 AM - 1:30 PM',
+          startTime: '11:30 AM',
+          endTime: '1:30 PM',
+          timeRange: '11:30 AM - 1:30 PM',
+          startHour: 11.5,
+          endHour: 13.5,
+          isBusy: false,
+        },
+        {
+          id: `${config.id}-4`,
+          title: config.id === 'mon' ? 'Business Communication' : 'Marketing Principles',
+          startTime: '1:30',
+          endTime: '3:30',
+          timeRange: '1:30 - 3:30',
+          room: config.id === 'mon' ? 'AS102' : 'M101',
+          startHour: 13.5,
+          endHour: 15.5,
+          isBusy: true,
+        },
+        {
+          id: `${config.id}-5`,
+          title: 'Free - 3:30 PM - 6:00 PM',
+          startTime: '3:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '3:30 PM - 6:00 PM',
+          startHour: 15.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    } else if (config.id === 'fri') {
+      items = [
+        {
+          id: 'fri-1',
+          title: 'Free - 8:00 AM - 10:30 AM',
+          startTime: '8:00 AM',
+          endTime: '10:30 AM',
+          timeRange: '8:00 AM - 10:30 AM',
+          startHour: 8.0,
+          endHour: 10.5,
+          isBusy: false,
+        },
+        {
+          id: 'fri-2',
+          title: 'DYD Project Consultation',
+          startTime: '10:30',
+          endTime: '12:30',
+          timeRange: '10:30–12:30',
+          room: 'Discussion 3',
+          startHour: 10.5,
+          endHour: 12.5,
+          isBusy: true,
+        },
+        {
+          id: 'fri-3',
+          title: 'Free - 12:30 PM - 3:00 PM',
+          startTime: '12:30 PM',
+          endTime: '3:00 PM',
+          timeRange: '12:30 PM - 3:00 PM',
+          startHour: 12.5,
+          endHour: 15.0,
+          isBusy: false,
+        },
+        {
+          id: 'fri-4',
+          title: 'Ethics & Social Responsibility',
+          startTime: '3:00',
+          endTime: '4:30',
+          timeRange: '3:00–4:30',
+          room: 'AS204',
+          startHour: 15.0,
+          endHour: 16.5,
+          isBusy: true,
+        },
+        {
+          id: 'fri-5',
+          title: 'Free - 4:30 PM - 6:00 PM',
+          startTime: '4:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '4:30 PM - 6:00 PM',
+          startHour: 16.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    } else if (config.id === 'sat') {
+      items = [
+        {
+          id: 'sat-1',
+          title: 'Free - 8:00 AM - 1:00 PM',
+          startTime: '8:00 AM',
+          endTime: '1:00 PM',
+          timeRange: '8:00 AM - 1:00 PM',
+          startHour: 8.0,
+          endHour: 13.0,
+          isBusy: false,
+        },
+        {
+          id: 'sat-2',
+          title: 'Student Assembly Meeting',
+          startTime: '1:00',
+          endTime: '3:00',
+          timeRange: '1:00–3:00',
+          room: 'Audi 2',
+          startHour: 13.0,
+          endHour: 15.0,
+          isBusy: true,
+        },
+        {
+          id: 'sat-3',
+          title: 'Free - 3:00 PM - 6:00 PM',
+          startTime: '3:00 PM',
+          endTime: '6:00 PM',
+          timeRange: '3:00 PM - 6:00 PM',
+          startHour: 15.0,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    } else {
+      items = [
+        {
+          id: 'sun-1',
+          title: 'Free - 8:00 AM - 6:00 PM',
+          startTime: '8:00 AM',
+          endTime: '6:00 PM',
+          timeRange: '8:00 AM - 6:00 PM',
+          startHour: 8.0,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    }
+
+    return {
+      id: config.id,
+      dayAbbrev: config.dayAbbrev,
+      dayNumber: String(dNum),
+      fullDate,
+      items,
+    };
+  });
+
+  return {
+    weekIndicator,
+    days,
+  };
+}
+
 export const SAMPLE_FRIEND_MARIA_DEBORAH: FriendAvailability = {
   id: 'f-agna',
   name: 'Maria Deborah',

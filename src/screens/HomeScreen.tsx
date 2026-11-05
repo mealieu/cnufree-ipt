@@ -168,6 +168,7 @@ export const HomeScreen: React.FC = () => {
         friend={selectedFriend}
         visible={!!selectedFriend}
         onClose={() => setSelectedFriend(null)}
+        onCompareTimetable={(f) => setViewingFriend(f)}
       />
 
       {/* Best Window Modal */}

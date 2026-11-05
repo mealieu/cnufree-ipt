@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,9 @@ import { COLORS } from '../constants/colors';
 import { FONTS } from '../constants/typography';
 import { UserAvatarSilhouette } from '../components/icons/NavIcons';
 import {
-  MARIA_WEEKLY_SCHEDULE,
   SAMPLE_FRIEND_MARIA_DEBORAH,
   DayScheduleTab,
+  getWeeklySchedule,
 } from '../mock/dashboardData';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { TabId } from '../types/navigation';
@@ -38,7 +38,7 @@ const TIMELINE_HOURS = [
   { hour: 9, label: '9 AM' },
   { hour: 10, label: '10 AM' },
   { hour: 11, label: '11 AM' },
-  { hour: 12, label: '12 AM' }, // Matches Figma screenshot label "12 AM"
+  { hour: 12, label: '12 AM' }, // Matches exact Figma screenshot label "12 AM"
   { hour: 13, label: '1 PM' },
   { hour: 14, label: '2 PM' },
   { hour: 15, label: '3 PM' },
@@ -51,37 +51,46 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
   friend = SAMPLE_FRIEND_MARIA_DEBORAH,
   onBack = () => console.log('Navigate back'),
 }) => {
-  // State for view controls (Daily vs Weekly)
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  // State for view controls (Daily vs Weekly) - Defaults to 'weekly' to match Figma screenshot exactly
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('weekly');
 
-  // State for selected day selector tab (defaults to 'tue' as in the Figma reference)
+  // State for week navigation offset (0 = current week displayed in Figma mockup)
+  const [weekOffset, setWeekOffset] = useState<number>(0);
+
+  // State for selected day selector tab (defaults to 'tue' as highlighted in Figma reference)
   const [selectedDayId, setSelectedDayId] = useState<string>('tue');
 
   // State for active bottom navigation tab (defaults to 'home' as highlighted in Figma reference)
   const [activeNavTab, setActiveNavTab] = useState<TabId>('home');
 
-  // Find the selected day config from weekly schedule
-  const activeDayConfig = useMemo(() => {
-    return (
-      MARIA_WEEKLY_SCHEDULE.find((d) => d.id === selectedDayId) ||
-      MARIA_WEEKLY_SCHEDULE[1]
-    );
-  }, [selectedDayId]);
+  // Dynamic weekly schedule based on current weekOffset
+  const currentWeekSchedule = useMemo(() => {
+    return getWeeklySchedule(weekOffset);
+  }, [weekOffset]);
 
-  // Items for the current day:
-  // If the passed friend is NOT Maria Deborah and has a custom schedule, use it on Tuesday,
-  // otherwise use the active day's multi-day mock schedule.
+  // Find the selected day configuration within the current week
+  const activeDayConfig: DayScheduleTab = useMemo(() => {
+    return (
+      currentWeekSchedule.days.find((d) => d.id === selectedDayId) ||
+      currentWeekSchedule.days[1] // Default to Tuesday
+    );
+  }, [currentWeekSchedule, selectedDayId]);
+
+  // Schedule items for the active day:
+  // If a custom friend (not Maria Deborah) was passed with a custom schedule, preserve it on Tuesday of week 0;
+  // otherwise, render the active day's rich timetable.
   const scheduleItems: FriendScheduleItem[] = useMemo(() => {
     if (
+      weekOffset === 0 &&
+      selectedDayId === 'tue' &&
       friend.id !== SAMPLE_FRIEND_MARIA_DEBORAH.id &&
       friend.schedule &&
-      friend.schedule.length > 0 &&
-      selectedDayId === 'tue'
+      friend.schedule.length > 0
     ) {
       return friend.schedule;
     }
     return activeDayConfig.items;
-  }, [friend, activeDayConfig, selectedDayId]);
+  }, [friend, activeDayConfig, weekOffset, selectedDayId]);
 
   // Dynamic header title: "Agna's schedule" or "<nickname>'s schedule"
   const headerTitle = useMemo(() => {
@@ -102,6 +111,40 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
     if (friend.groups?.includes('courtside')) return 'Court Side Friend';
     return 'DYD Friend';
   }, [friend]);
+
+  // Handlers for week navigation
+  const handlePrevWeek = useCallback(() => {
+    setWeekOffset((prev) => prev - 1);
+  }, []);
+
+  const handleNextWeek = useCallback(() => {
+    setWeekOffset((prev) => prev + 1);
+  }, []);
+
+  // Handlers for daily navigation in daily view mode
+  const handlePrevDay = useCallback(() => {
+    const days = currentWeekSchedule.days;
+    const currentIndex = days.findIndex((d) => d.id === selectedDayId);
+    if (currentIndex > 0) {
+      setSelectedDayId(days[currentIndex - 1].id);
+    } else {
+      // Step to Sunday of previous week
+      setWeekOffset((prev) => prev - 1);
+      setSelectedDayId('sun');
+    }
+  }, [currentWeekSchedule, selectedDayId]);
+
+  const handleNextDay = useCallback(() => {
+    const days = currentWeekSchedule.days;
+    const currentIndex = days.findIndex((d) => d.id === selectedDayId);
+    if (currentIndex < days.length - 1) {
+      setSelectedDayId(days[currentIndex + 1].id);
+    } else {
+      // Step to Monday of next week
+      setWeekOffset((prev) => prev + 1);
+      setSelectedDayId('mon');
+    }
+  }, [currentWeekSchedule, selectedDayId]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -150,10 +193,10 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
           </View>
 
           {/* ================= 3. DATE DISPLAY & VIEW CONTROLS ================= */}
-          {/* Selected Full Date */}
+          {/* Currently selected full date */}
           <Text style={styles.dateDisplay}>{activeDayConfig.fullDate}</Text>
 
-          {/* Pill-Shaped Toggle Switch (Daily vs Weekly) */}
+          {/* Pill-shaped toggle switch for "Daily" and "Weekly" views */}
           <View style={styles.toggleContainer}>
             <TouchableOpacity
               style={[
@@ -202,25 +245,117 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* ================= 4. DAY SELECTOR TABS ================= */}
+          {/* ================= 4. NAVIGATION BANNER ================= */}
+          {/* When in Weekly view: Dark Green Weekly Navigation Banner with < [ Sunday, October 25,2026 ] > */}
+          {/* When in Daily view: Interactive Day Stepper Banner */}
+          {viewMode === 'weekly' ? (
+            <View style={styles.weeklyBanner}>
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handlePrevWeek}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Previous Week"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 19L8 12L15 5"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+
+              <View style={styles.weeklyIndicatorPill}>
+                <Text style={styles.weeklyIndicatorText}>
+                  {currentWeekSchedule.weekIndicator}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handleNextWeek}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Next Week"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M9 5L16 12L9 19"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.weeklyBanner}>
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handlePrevDay}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Previous Day"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 19L8 12L15 5"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+
+              <View style={styles.weeklyIndicatorPill}>
+                <Text style={styles.weeklyIndicatorText}>
+                  {activeDayConfig.fullDate}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handleNextDay}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Next Day"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M9 5L16 12L9 19"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ================= 5. DAY SELECTOR TABS ================= */}
           <View style={styles.dayTabsWrapper}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.dayTabsScroll}
             >
-              {MARIA_WEEKLY_SCHEDULE.map((tab) => {
+              {currentWeekSchedule.days.map((tab) => {
                 const isActive = tab.id === selectedDayId;
                 return (
                   <TouchableOpacity
                     key={tab.id}
                     style={[styles.dayTab, isActive && styles.dayTabActive]}
-                    onPress={() => {
-                      setSelectedDayId(tab.id);
-                      if (viewMode === 'weekly') {
-                        setViewMode('daily');
-                      }
-                    }}
+                    onPress={() => setSelectedDayId(tab.id)}
                     activeOpacity={0.8}
                     accessibilityRole="button"
                     accessibilityLabel={`${tab.dayAbbrev} ${tab.dayNumber}`}
@@ -248,190 +383,121 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
             </ScrollView>
           </View>
 
-          {/* ================= 5. TIMELINE CONTAINER / VIEW MODE ================= */}
-          {viewMode === 'daily' ? (
-            /* ================= DAILY VIEW: CHRONOLOGICAL TIME BLOCKS ================= */
-            <View style={styles.timelineBox}>
-              {/* Left Column: Vertical Time Axis (8 AM down to 6 PM) */}
-              <View style={styles.timeAxisColumn}>
-                {TIMELINE_HOURS.map((item, index) => (
-                  <View
-                    key={item.hour}
-                    style={[
-                      styles.timeAxisItem,
-                      { top: index * HOUR_HEIGHT - 7 },
-                    ]}
-                  >
-                    <Text style={styles.timeAxisLabel}>{item.label}</Text>
-                  </View>
-                ))}
-              </View>
+          {/* ================= 6. CHRONOLOGICAL TIME BLOCKS (TIMELINE CONTAINER) ================= */}
+          <View style={styles.timelineBox}>
+            {/* Left Column: Vertical Time Axis (8 AM down to 6 PM) */}
+            <View style={styles.timeAxisColumn}>
+              {TIMELINE_HOURS.map((item, index) => (
+                <View
+                  key={item.hour}
+                  style={[
+                    styles.timeAxisItem,
+                    { top: index * HOUR_HEIGHT - 7 },
+                  ]}
+                >
+                  <Text style={styles.timeAxisLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
 
-              {/* Right Column: Grid Lines and Positioned Time Blocks */}
-              <View
-                style={[
-                  styles.scheduleGridArea,
-                  { height: TOTAL_HOURS * HOUR_HEIGHT },
-                ]}
-              >
-                {/* Horizontal Grid Lines */}
-                {TIMELINE_HOURS.map((item, index) => (
-                  <View
-                    key={`line-${item.hour}`}
-                    style={[styles.gridLine, { top: index * HOUR_HEIGHT }]}
-                  />
-                ))}
+            {/* Right Column: Grid Lines and Chronological Time Blocks */}
+            <View
+              style={[
+                styles.scheduleGridArea,
+                { height: TOTAL_HOURS * HOUR_HEIGHT },
+              ]}
+            >
+              {/* Horizontal Grid Lines */}
+              {TIMELINE_HOURS.map((item, index) => (
+                <View
+                  key={`line-${item.hour}`}
+                  style={[styles.gridLine, { top: index * HOUR_HEIGHT }]}
+                />
+              ))}
 
-                {/* Chronologically Positioned Time Blocks */}
-                {scheduleItems.map((item) => {
-                  const clampedStart = Math.max(START_HOUR, item.startHour);
-                  const clampedEnd = Math.min(END_HOUR, item.endHour);
-                  const duration = Math.max(0.5, clampedEnd - clampedStart);
+              {/* Chronologically Positioned Time Blocks */}
+              {scheduleItems.map((item) => {
+                const clampedStart = Math.max(START_HOUR, item.startHour);
+                const clampedEnd = Math.min(END_HOUR, item.endHour);
+                const duration = Math.max(0.5, clampedEnd - clampedStart);
 
-                  const blockTop = (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
-                  const blockHeight = duration * HOUR_HEIGHT - 4;
+                const blockTop = (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
+                const blockHeight = duration * HOUR_HEIGHT - 4;
 
-                  if (item.isBusy) {
-                    /* Busy/Class Time Block */
-                    return (
-                      <View
-                        key={item.id}
-                        style={[
-                          styles.busyBlock,
-                          {
-                            top: blockTop,
-                            height: blockHeight,
-                          },
-                        ]}
-                      >
-                        <View style={styles.busyTopRow}>
-                          <Text style={styles.busyTitle} numberOfLines={1}>
-                            {item.title}
-                          </Text>
-                          <Text style={styles.busyTimeRange}>
-                            {item.timeRange ||
-                              `${item.startTime}–${item.endTime}`}
-                          </Text>
-                        </View>
-                        {item.room && (
-                          <Text style={styles.busyRoom} numberOfLines={1}>
-                            {item.room}
-                          </Text>
-                        )}
-                      </View>
-                    );
-                  }
-
-                  /* Free Time Block */
+                if (item.isBusy) {
+                  /* Busy/Class Time Block */
                   return (
                     <View
                       key={item.id}
                       style={[
-                        styles.freeBlock,
+                        styles.busyBlock,
                         {
                           top: blockTop,
                           height: blockHeight,
                         },
                       ]}
                     >
-                      <View style={styles.freeContentRow}>
-                        <Svg
-                          width={14}
-                          height={14}
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          style={styles.freeCheckIcon}
-                        >
-                          <Path
-                            d="M3.5 8.5L6.5 11.5L12.5 4.5"
-                            stroke="#2C3A2E"
-                            strokeWidth={2.2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </Svg>
-                        <Text style={styles.freeText} numberOfLines={1}>
-                          {item.title.startsWith('Free')
-                            ? item.title
-                            : `Free - ${item.startTime} - ${item.endTime}`}
+                      <View style={styles.busyTopRow}>
+                        <Text style={styles.busyTitle} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={styles.busyTimeRange}>
+                          {item.timeRange ||
+                            `${item.startTime}–${item.endTime}`}
                         </Text>
                       </View>
+                      {item.room && (
+                        <Text style={styles.busyRoom} numberOfLines={1}>
+                          {item.room}
+                        </Text>
+                      )}
                     </View>
                   );
-                })}
-              </View>
-            </View>
-          ) : (
-            /* ================= WEEKLY VIEW: MULTI-DAY SUMMARY ================= */
-            <View style={styles.weeklySummaryContainer}>
-              <View style={styles.weeklyHeader}>
-                <Text style={styles.weeklyHeaderTitle}>Weekly Routine Overview</Text>
-                <Text style={styles.weeklyHeaderSubtitle}>
-                  Select a day to inspect full daily timetable
-                </Text>
-              </View>
+                }
 
-              {MARIA_WEEKLY_SCHEDULE.map((day) => {
-                const busyCount = day.items.filter((i) => i.isBusy).length;
-                const freeCount = day.items.filter((i) => !i.isBusy).length;
-
+                /* Free Time Block */
                 return (
-                  <TouchableOpacity
-                    key={day.id}
+                  <View
+                    key={item.id}
                     style={[
-                      styles.weeklyDayCard,
-                      day.id === selectedDayId && styles.weeklyDayCardSelected,
+                      styles.freeBlock,
+                      {
+                        top: blockTop,
+                        height: blockHeight,
+                      },
                     ]}
-                    onPress={() => {
-                      setSelectedDayId(day.id);
-                      setViewMode('daily');
-                    }}
-                    activeOpacity={0.8}
                   >
-                    <View style={styles.weeklyDayLeft}>
-                      <View
-                        style={[
-                          styles.weeklyDayBadge,
-                          day.id === selectedDayId && styles.weeklyDayBadgeActive,
-                        ]}
+                    <View style={styles.freeContentRow}>
+                      <Svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        style={styles.freeCheckIcon}
                       >
-                        <Text
-                          style={[
-                            styles.weeklyDayBadgeText,
-                            day.id === selectedDayId &&
-                              styles.weeklyDayBadgeTextActive,
-                          ]}
-                        >
-                          {day.dayAbbrev}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.weeklyDayBadgeNumber,
-                            day.id === selectedDayId &&
-                              styles.weeklyDayBadgeNumberActive,
-                          ]}
-                        >
-                          {day.dayNumber}
-                        </Text>
-                      </View>
-                      <View style={styles.weeklyDayMeta}>
-                        <Text style={styles.weeklyDayName}>{day.fullDate}</Text>
-                        <Text style={styles.weeklyDayCounts}>
-                          {busyCount} class{busyCount === 1 ? '' : 'es'} · {freeCount} open window{freeCount === 1 ? '' : 's'}
-                        </Text>
-                      </View>
+                        <Path
+                          d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                          stroke="#2C3A2E"
+                          strokeWidth={2.2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                      <Text style={styles.freeText} numberOfLines={1}>
+                        {item.title.startsWith('Free')
+                          ? item.title
+                          : `Free - ${item.startTime} - ${item.endTime}`}
+                      </Text>
                     </View>
-
-                    <Text style={styles.weeklyViewDayLink}>View Daily ›</Text>
-                  </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
-          )}
+          </View>
         </View>
       </ScrollView>
 
-      {/* ================= 6. BOTTOM NAVIGATION BAR (Figma Reference) ================= */}
+      {/* ================= 7. BOTTOM NAVIGATION BAR (Figma Reference) ================= */}
       <BottomNavBar
         activeTab={activeNavTab}
         onTabChange={(tab) => {
@@ -483,7 +549,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 22,
+    fontSize: 23,
     color: '#172019',
     letterSpacing: -0.2,
   },
@@ -492,7 +558,7 @@ const styles = StyleSheet.create({
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
     gap: 16,
   },
   avatarContainer: {
@@ -534,7 +600,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#CCD7CA',
     borderRadius: 24,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 14,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -587,21 +653,67 @@ const styles = StyleSheet.create({
     color: '#2F3D32',
   },
 
-  /* 4. Day Selector Tabs */
+  /* 4. Weekly Navigation Banner */
+  weeklyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.weeklyBannerBg,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 3.5,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+      },
+    }),
+  },
+  bannerArrowBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weeklyIndicatorPill: {
+    backgroundColor: COLORS.weeklyBannerPillBg,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weeklyIndicatorText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: COLORS.weeklyBannerText,
+    letterSpacing: 0.1,
+  },
+
+  /* 5. Day Selector Tabs */
   dayTabsWrapper: {
     marginBottom: 16,
   },
   dayTabsScroll: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    gap: 8,
+    paddingVertical: 3,
+    gap: 7,
   },
   dayTab: {
-    width: 49,
+    width: 48,
     height: 56,
     borderRadius: 8,
-    backgroundColor: '#C5D6C7',
+    backgroundColor: COLORS.dayTabBg,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
@@ -609,23 +721,23 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1.5 },
         shadowOpacity: 0.12,
-        shadowRadius: 2.5,
+        shadowRadius: 2,
       },
       android: {
         elevation: 2,
       },
       web: {
-        boxShadow: '0 1.5px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 1.5px 3.5px rgba(0,0,0,0.1)',
       },
     }),
   },
   dayTabActive: {
-    backgroundColor: '#4A5F50',
+    backgroundColor: COLORS.dayTabActiveBg,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.22,
         shadowRadius: 3,
       },
       android: {
@@ -639,7 +751,7 @@ const styles = StyleSheet.create({
   dayAbbrevText: {
     fontFamily: FONTS.medium,
     fontSize: 11,
-    color: '#2E3D31',
+    color: COLORS.dayTabTextSubtle,
     marginBottom: 2,
   },
   dayAbbrevTextActive: {
@@ -648,19 +760,19 @@ const styles = StyleSheet.create({
   dayNumberText: {
     fontFamily: FONTS.bold,
     fontSize: 15,
-    color: '#1A231D',
+    color: COLORS.dayTabTextDark,
   },
   dayNumberTextActive: {
     color: '#FFFFFF',
   },
 
-  /* 5. Timeline Container & Time Blocks */
+  /* 6. Chronological Time Blocks (Timeline Container) */
   timelineBox: {
     flexDirection: 'row',
     borderWidth: 1.4,
-    borderColor: '#60A867',
+    borderColor: COLORS.timelineContainerBorder,
     borderRadius: 14,
-    backgroundColor: '#FAF8EF',
+    backgroundColor: COLORS.timelineContainerBg,
     paddingVertical: 14,
     paddingHorizontal: 8,
     marginBottom: 20,
@@ -716,9 +828,9 @@ const styles = StyleSheet.create({
     right: 4,
     borderRadius: 14,
     borderWidth: 1.4,
-    borderColor: '#A8B9AA',
+    borderColor: COLORS.timelineFreeBorder,
     borderStyle: 'dashed',
-    backgroundColor: 'rgba(235, 243, 235, 0.35)',
+    backgroundColor: COLORS.timelineFreeBg,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 8,
@@ -745,11 +857,11 @@ const styles = StyleSheet.create({
     left: 4,
     right: 4,
     borderRadius: 8,
-    backgroundColor: '#D7DCE2',
+    backgroundColor: COLORS.timelineBusyBg,
     borderLeftWidth: 4.5,
-    borderLeftColor: '#36424D',
+    borderLeftColor: COLORS.timelineBusyAccent,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
     justifyContent: 'center',
     ...Platform.select({
       ios: {
@@ -788,95 +900,5 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: 12,
     color: '#5B6874',
-  },
-
-  /* Weekly Summary Styles */
-  weeklySummaryContainer: {
-    borderWidth: 1.4,
-    borderColor: '#60A867',
-    borderRadius: 14,
-    backgroundColor: '#FAF8EF',
-    padding: 14,
-    marginBottom: 20,
-  },
-  weeklyHeader: {
-    marginBottom: 12,
-  },
-  weeklyHeaderTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 15,
-    color: '#172019',
-  },
-  weeklyHeaderSubtitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 11.5,
-    color: '#556858',
-    marginTop: 2,
-  },
-  weeklyDayCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8E0',
-  },
-  weeklyDayCardSelected: {
-    borderColor: '#4A5F50',
-    backgroundColor: '#F3F7F3',
-  },
-  weeklyDayLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  weeklyDayBadge: {
-    width: 38,
-    height: 42,
-    borderRadius: 6,
-    backgroundColor: '#C5D6C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weeklyDayBadgeActive: {
-    backgroundColor: '#4A5F50',
-  },
-  weeklyDayBadgeText: {
-    fontFamily: FONTS.medium,
-    fontSize: 10,
-    color: '#2E3D31',
-  },
-  weeklyDayBadgeTextActive: {
-    color: '#DCE8DE',
-  },
-  weeklyDayBadgeNumber: {
-    fontFamily: FONTS.bold,
-    fontSize: 13,
-    color: '#1A231D',
-  },
-  weeklyDayBadgeNumberActive: {
-    color: '#FFFFFF',
-  },
-  weeklyDayMeta: {
-    justifyContent: 'center',
-  },
-  weeklyDayName: {
-    fontFamily: FONTS.bold,
-    fontSize: 13,
-    color: '#172019',
-  },
-  weeklyDayCounts: {
-    fontFamily: FONTS.medium,
-    fontSize: 11,
-    color: '#556858',
-    marginTop: 2,
-  },
-  weeklyViewDayLink: {
-    fontFamily: FONTS.bold,
-    fontSize: 12,
-    color: COLORS.darkGreen,
   },
 });

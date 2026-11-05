@@ -57,4 +57,20 @@ export const COLORS = {
   navActive: '#145A2E',
   navInactive: '#354739',
   navActiveBg: 'transparent',
+
+  // Friend Schedule View (HS-12)
+  weeklyBannerBg: '#354E3A',
+  weeklyBannerPillBg: '#618065',
+  weeklyBannerText: '#FAF8EF',
+  weeklyBannerArrow: '#DCE5DC',
+  dayTabBg: '#C5D6C7',
+  dayTabActiveBg: '#4A5F50',
+  dayTabTextDark: '#1A231D',
+  dayTabTextSubtle: '#2E3D31',
+  timelineContainerBorder: '#60A867',
+  timelineContainerBg: '#FAF8EF',
+  timelineFreeBorder: '#A8B9AA',
+  timelineFreeBg: 'rgba(235, 243, 235, 0.45)',
+  timelineBusyBg: '#D7DCE2',
+  timelineBusyAccent: '#36424D',
 };
