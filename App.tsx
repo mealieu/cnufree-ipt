@@ -8,7 +8,7 @@ import {
   DMSans_500Medium,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
-import { WelcomeScreen } from './src/screens/WelcomeScreen';
+import { HomeScreen } from './src/screens/HomeScreen';
 import { COLORS } from './src/constants/colors';
 
 export default function App() {
@@ -31,7 +31,7 @@ export default function App() {
   return (
     <>
       <StatusBar style="dark" />
-      <WelcomeScreen />
+      <HomeScreen />
     </>
   );
 }
