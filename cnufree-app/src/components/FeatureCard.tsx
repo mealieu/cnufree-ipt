@@ -7,7 +7,7 @@ interface FeatureCardProps {
   title: string;
   description: string;
   isCenter?: boolean;
-  alignRight?: boolean; // New prop for right alignment
+  alignRight?: boolean; 
   style?: ViewStyle;
   icon?: string;
 }
@@ -24,7 +24,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     <View style={[
       styles.card, 
       isCenter ? styles.centerCard : styles.sideCard, 
-      alignRight && styles.alignRightContainer, // Apply flex-end if alignRight is true
+      alignRight && styles.alignRightContainer, 
       style
     ]}>
       <Text style={[styles.icon, alignRight && styles.alignRightText]}>{icon}</Text>
