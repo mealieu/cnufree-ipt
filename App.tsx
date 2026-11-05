@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import {
   useFonts,
   DMSans_400Regular,
@@ -11,7 +12,7 @@ import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { COLORS } from './src/constants/colors';
 
 export default function App() {
-  let [fontsLoaded] = useFonts({
+  const [fontsLoaded] = useFonts({
     DMSans_400Regular,
     DMSans_400Regular_Italic,
     DMSans_500Medium,
@@ -21,10 +22,16 @@ export default function App() {
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.cream }}>
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color={COLORS.darkGreen} />
       </View>
     );
   }
 
-  return <WelcomeScreen />;
+  return (
+    <>
+      <StatusBar style="dark" />
+      <WelcomeScreen />
+    </>
+  );
 }

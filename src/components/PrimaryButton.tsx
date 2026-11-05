@@ -11,7 +11,13 @@ interface PrimaryButtonProps {
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, style }) => {
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={[styles.button, style]}
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       <Text style={styles.label}>{label}</Text>
     </TouchableOpacity>
   );
