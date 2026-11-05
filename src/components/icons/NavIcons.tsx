@@ -95,12 +95,17 @@ export const ProfileIcon: React.FC<IconProps> = ({ color, size = 26 }) => (
   </Svg>
 );
 
-export const UserAvatarSilhouette: React.FC<{ size?: number; color?: string }> = ({
+export const UserAvatarSilhouette: React.FC<{
+  size?: number;
+  color?: string;
+  bgColor?: string;
+}> = ({
   size = 48,
-  color = '#8A9A8C',
+  color = '#627180',
+  bgColor = '#DEE5ED',
 }) => (
   <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <Circle cx="24" cy="24" r="23" fill="#DFE4DC" />
+    <Circle cx="24" cy="24" r="23" fill={bgColor} />
     <Circle cx="24" cy="18" r="7.5" fill={color} />
     <Path
       d="M10 39C10 31.5 16.5 29 24 29C31.5 29 38 31.5 38 39"

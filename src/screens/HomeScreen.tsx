@@ -25,6 +25,7 @@ import {
   FRIEND_GROUPS,
   INITIAL_SCHEDULE_ACTIVITIES,
   SAMPLE_FRIENDS,
+  SAMPLE_FRIEND_MARIA_DEBORAH,
   filterFriendsByGroup,
   calculateBestWindow,
   formatDashboardDate,
@@ -179,7 +180,11 @@ export const HomeScreen: React.FC = () => {
       {/* Bottom Navigation Bar from Figma Screenshot */}
       <BottomNavBar
         activeTab="home"
-        onTabChange={() => {}}
+        onTabChange={(tab) => {
+          if (tab === 'friends') {
+            setViewingFriend(SAMPLE_FRIEND_MARIA_DEBORAH);
+          }
+        }}
         notificationBadgeCount={0}
       />
     </SafeAreaView>

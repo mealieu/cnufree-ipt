@@ -21,6 +21,7 @@ export interface FriendScheduleItem {
   title: string;
   startTime: string; // e.g. "8:00 AM"
   endTime: string;   // e.g. "10:30 AM"
+  timeRange?: string; // e.g. "9:00–10:30"
   startHour: number; // 24-hr decimal, e.g. 8.0
   endHour: number;   // 24-hr decimal, e.g. 10.5
   room?: string;
@@ -38,6 +39,8 @@ export interface MutualFreeWindow {
 export interface FriendAvailability {
   id: string;
   name: string;
+  nickname?: string;
+  relationship?: string;
   initials: string;
   avatarUrl?: string;
   status: 'free' | 'busy';

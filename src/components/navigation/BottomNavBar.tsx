@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTabButton: {
-    backgroundColor: 'rgba(20, 62, 33, 0.08)',
+    backgroundColor: 'transparent',
   },
   iconContainer: {
     width: 28,

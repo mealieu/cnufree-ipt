@@ -51,10 +51,10 @@ export const COLORS = {
   busyBadgeText: '#C0392B',
   busyIndicatorRed: '#E57373',
 
-  // Bottom Navigation Bar (HS-02)
-  navBackground: '#8EA78C',
-  navBorderTop: '#243427',
-  navActive: '#133E21',
-  navInactive: '#3C533F',
-  navActiveBg: 'rgba(19, 62, 33, 0.08)',
+  // Bottom Navigation Bar (HS-02 / HS-11)
+  navBackground: '#CBD7C8',
+  navBorderTop: 'rgba(35, 50, 38, 0.15)',
+  navActive: '#145A2E',
+  navInactive: '#354739',
+  navActiveBg: 'transparent',
 };
