@@ -39,6 +39,7 @@ export const HomeScreen: React.FC = () => {
   // State
   const [selectedGroup, setSelectedGroup] = useState<FriendGroupId>('all');
   const [scheduleActivities] = useState(INITIAL_SCHEDULE_ACTIVITIES);
+  const [isEmptyDemoActive, setIsEmptyDemoActive] = useState(false);
   const [friendsList] = useState(SAMPLE_FRIENDS);
   const [activeTimelinePeriod, setActiveTimelinePeriod] = useState<TimeSlotTimeline | null>(null);
 
@@ -105,6 +106,8 @@ export const HomeScreen: React.FC = () => {
             timeMarkers={
               activeTimelinePeriod?.timeMarkers || ['8:00AM', '1:00PM', '3:00 PM']
             }
+            onToggleEmptyDemo={() => setIsEmptyDemoActive(!isEmptyDemoActive)}
+            isEmptyDemoActive={isEmptyDemoActive}
           />
 
           {/* 3. Friend Group Filter Tabs */}
