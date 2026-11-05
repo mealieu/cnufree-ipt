@@ -33,6 +33,7 @@ import {
 import { FriendGroupId, FriendAvailability } from '../types/dashboard';
 
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
+import { FriendScheduleScreen } from './FriendScheduleScreen';
 
 export const HomeScreen: React.FC = () => {
 
@@ -46,6 +47,7 @@ export const HomeScreen: React.FC = () => {
   // Modals & Sheets
   const [isFullDayModalVisible, setIsFullDayModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendAvailability | null>(null);
+  const [viewingFriend, setViewingFriend] = useState<FriendAvailability | null>(null);
   const [isBestWindowModalVisible, setIsBestWindowModalVisible] = useState(false);
 
   // View all toggles
@@ -79,6 +81,16 @@ export const HomeScreen: React.FC = () => {
       setRefreshing(false);
     }, 600);
   }, []);
+
+  // If viewing dedicated friend schedule screen (HS-10)
+  if (viewingFriend) {
+    return (
+      <FriendScheduleScreen
+        friend={viewingFriend}
+        onBack={() => setViewingFriend(null)}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -132,7 +144,7 @@ export const HomeScreen: React.FC = () => {
           <FriendAvailabilitySection
             freeFriends={freeFriends}
             busyFriends={busyFriends}
-            onSelectFriend={(friend) => setSelectedFriend(friend)}
+            onSelectFriend={(friend) => setViewingFriend(friend)}
             onViewAllFree={() => setShowAllFree(!showAllFree)}
             onViewAllBusy={() => setShowAllBusy(!showAllBusy)}
             showAllFree={showAllFree}

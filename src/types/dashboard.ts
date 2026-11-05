@@ -16,6 +16,25 @@ export interface ScheduleActivity {
   isBusy: boolean;
 }
 
+export interface FriendScheduleItem {
+  id: string;
+  title: string;
+  startTime: string; // e.g. "8:00 AM"
+  endTime: string;   // e.g. "10:30 AM"
+  startHour: number; // 24-hr decimal, e.g. 8.0
+  endHour: number;   // 24-hr decimal, e.g. 10.5
+  room?: string;
+  code?: string;
+  isBusy: boolean;
+  description?: string;
+}
+
+export interface MutualFreeWindow {
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+}
+
 export interface FriendAvailability {
   id: string;
   name: string;
@@ -28,6 +47,8 @@ export interface FriendAvailability {
   groups: Array<'bora' | 'courtside' | 'dyd'>;
   freeSlots: Array<{ startHour: number; endHour: number }>;
   scheduleNotes?: string;
+  currentLocation?: string;
+  schedule?: FriendScheduleItem[];
 }
 
 export interface BestWindow {

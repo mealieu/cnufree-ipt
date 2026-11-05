@@ -5,6 +5,7 @@ import {
   BestWindow,
   UserProfile,
   FriendGroupId,
+  MutualFreeWindow,
 } from '../types/dashboard';
 
 export const CURRENT_USER: UserProfile = {
@@ -91,12 +92,84 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
     untilTime: '10:30AM',
     nextActivity: '3:00pm AL212',
     groups: ['bora', 'courtside'],
+    currentLocation: 'University Library 2F',
     freeSlots: [
       { startHour: 8.0, endHour: 10.5 },
-      { startHour: 13.0, endHour: 15.0 },
+      { startHour: 12.0, endHour: 15.0 },
       { startHour: 19.5, endHour: 21.0 },
     ],
     scheduleNotes: 'Available all morning until class in AL212.',
+    schedule: [
+      {
+        id: 'msg-1',
+        title: 'Morning Free Study Slot',
+        startTime: '8:00 AM',
+        endTime: '10:30 AM',
+        startHour: 8.0,
+        endHour: 10.5,
+        room: 'Library 2F',
+        isBusy: false,
+        description: 'Morning study & reviewing lecture slides',
+      },
+      {
+        id: 'msg-2',
+        title: 'GE 401 - Ethics & Professionalism',
+        startTime: '10:30 AM',
+        endTime: '12:00 PM',
+        startHour: 10.5,
+        endHour: 12.0,
+        room: 'AS301',
+        code: 'GE 401',
+        isBusy: true,
+        description: 'Case study analysis and class debate',
+      },
+      {
+        id: 'msg-3',
+        title: 'Lunch & Campus Commons Break',
+        startTime: '12:00 PM',
+        endTime: '3:00 PM',
+        startHour: 12.0,
+        endHour: 15.0,
+        room: 'Student Commons',
+        isBusy: false,
+        description: 'Lunch with peers & chill time',
+      },
+      {
+        id: 'msg-4',
+        title: 'CS 314 - Web Systems & Technologies',
+        startTime: '3:00 PM',
+        endTime: '5:30 PM',
+        startHour: 15.0,
+        endHour: 17.5,
+        room: 'AL212',
+        code: 'CS 314',
+        isBusy: true,
+        description: 'Full-stack application practical lab',
+      },
+      {
+        id: 'msg-5',
+        title: 'Student Council Committee Meeting',
+        startTime: '5:30 PM',
+        endTime: '7:30 PM',
+        startHour: 17.5,
+        endHour: 19.5,
+        room: 'SAC 102',
+        code: 'ORG 101',
+        isBusy: true,
+        description: 'Planning upcoming university sportsfest',
+      },
+      {
+        id: 'msg-6',
+        title: 'Evening Free Window (Hangout)',
+        startTime: '7:30 PM',
+        endTime: '9:00 PM',
+        startHour: 19.5,
+        endHour: 21.0,
+        room: 'Court Side Cafe',
+        isBusy: false,
+        description: 'Free for dinner and catch-up',
+      },
+    ],
   },
   {
     id: 'f-2',
@@ -106,11 +179,72 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
     untilTime: '3:00PM',
     nextActivity: '6:00pm D314',
     groups: ['bora', 'dyd'],
+    currentLocation: 'Campus Green Pavilion',
     freeSlots: [
       { startHour: 8.0, endHour: 15.0 },
+      { startHour: 16.5, endHour: 18.0 },
       { startHour: 19.5, endHour: 21.5 },
     ],
     scheduleNotes: 'Free for group work and lunch!',
+    schedule: [
+      {
+        id: 'aa-1',
+        title: 'Morning & Midday Open Study',
+        startTime: '8:00 AM',
+        endTime: '3:00 PM',
+        startHour: 8.0,
+        endHour: 15.0,
+        room: 'Green Pavilion',
+        isBusy: false,
+        description: 'Free all morning to collaborate and study',
+      },
+      {
+        id: 'aa-2',
+        title: 'Bora Project Sprint Planning',
+        startTime: '3:00 PM',
+        endTime: '4:30 PM',
+        startHour: 15.0,
+        endHour: 16.5,
+        room: 'Discussion Room 4',
+        code: 'PROJ 302',
+        isBusy: true,
+        description: 'Sprint planning and task breakdown',
+      },
+      {
+        id: 'aa-3',
+        title: 'Pre-class Study Break',
+        startTime: '4:30 PM',
+        endTime: '6:00 PM',
+        startHour: 16.5,
+        endHour: 18.0,
+        room: 'D Building Lobby',
+        isBusy: false,
+        description: 'Reading chapter notes',
+      },
+      {
+        id: 'aa-4',
+        title: 'CS 320 - Database Systems Lab',
+        startTime: '6:00 PM',
+        endTime: '7:30 PM',
+        startHour: 18.0,
+        endHour: 19.5,
+        room: 'D314',
+        code: 'CS 320',
+        isBusy: true,
+        description: 'Relational database schema evaluation',
+      },
+      {
+        id: 'aa-5',
+        title: 'Evening Chill Window',
+        startTime: '7:30 PM',
+        endTime: '9:00 PM',
+        startHour: 19.5,
+        endHour: 21.0,
+        room: 'Campus Commons',
+        isBusy: false,
+        description: 'Free for evening hangout with group',
+      },
+    ],
   },
   {
     id: 'f-3',
@@ -121,11 +255,84 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
     currentActivity: 'Networking D216',
     nextActivity: '1:00pm Tech Lab',
     groups: ['courtside', 'dyd'],
+    currentLocation: 'Networking Lab D216',
     freeSlots: [
       { startHour: 10.5, endHour: 13.0 },
+      { startHour: 15.5, endHour: 17.5 },
       { startHour: 19.5, endHour: 21.0 },
     ],
     scheduleNotes: 'Midterm project discussion during lunch break.',
+    schedule: [
+      {
+        id: 'na-1',
+        title: 'IT 210 - Computer Networking',
+        startTime: '8:00 AM',
+        endTime: '10:30 AM',
+        startHour: 8.0,
+        endHour: 10.5,
+        room: 'D216',
+        code: 'IT 210',
+        isBusy: true,
+        description: 'Hands-on router switch configuration',
+      },
+      {
+        id: 'na-2',
+        title: 'Post-Networking Vacant Interval',
+        startTime: '10:30 AM',
+        endTime: '1:00 PM',
+        startHour: 10.5,
+        endHour: 13.0,
+        room: 'Engineering Quad',
+        isBusy: false,
+        description: 'Free time for lunch and resting',
+      },
+      {
+        id: 'na-3',
+        title: 'IT 305 - System Administration',
+        startTime: '1:00 PM',
+        endTime: '3:30 PM',
+        startHour: 13.0,
+        endHour: 15.5,
+        room: 'L302',
+        code: 'IT 305',
+        isBusy: true,
+        description: 'Linux server management & Docker setup',
+      },
+      {
+        id: 'na-4',
+        title: 'Afternoon Free Window',
+        startTime: '3:30 PM',
+        endTime: '5:30 PM',
+        startHour: 15.5,
+        endHour: 17.5,
+        room: 'Student Lounge',
+        isBusy: false,
+        description: 'Relaxation and snacks',
+      },
+      {
+        id: 'na-5',
+        title: 'Court Side Team Conditioning',
+        startTime: '5:30 PM',
+        endTime: '7:30 PM',
+        startHour: 17.5,
+        endHour: 19.5,
+        room: 'University Track Oval',
+        code: 'TRAIN',
+        isBusy: true,
+        description: 'Strength and fitness training',
+      },
+      {
+        id: 'na-6',
+        title: 'Evening Free Window',
+        startTime: '7:30 PM',
+        endTime: '9:00 PM',
+        startHour: 19.5,
+        endHour: 21.0,
+        room: 'Main Cafeteria',
+        isBusy: false,
+        description: 'Free for dinner and social time',
+      },
+    ],
   },
   {
     id: 'f-4',
@@ -328,3 +535,58 @@ export const TIMELINE_PERIODS: TimeSlotTimeline[] = [
     ],
   },
 ];
+
+/**
+ * Format 24-hr decimal hour (e.g. 10.5) to "10:30 AM"
+ */
+export function formatDecimalHourToTime(decimalHour: number): string {
+  const totalMinutes = Math.round(decimalHour * 60);
+  const hours24 = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  const formattedMinutes = mins < 10 ? `0${mins}` : `${mins}`;
+  return `${hours12}:${formattedMinutes} ${period}`;
+}
+
+/**
+ * Calculate mutual free time windows between the user and a friend
+ */
+export function calculateMutualFreeWindows(
+  userActivities: ScheduleActivity[],
+  friend: FriendAvailability
+): MutualFreeWindow[] {
+  const userFree = userActivities.filter((a) => !a.isBusy);
+  const friendFree = friend.schedule
+    ? friend.schedule.filter((s) => !s.isBusy)
+    : friend.freeSlots.map((fs, idx) => ({
+        id: `fs-${idx}`,
+        title: 'Free Window',
+        startTime: formatDecimalHourToTime(fs.startHour),
+        endTime: formatDecimalHourToTime(fs.endHour),
+        startHour: fs.startHour,
+        endHour: fs.endHour,
+        isBusy: false,
+      }));
+
+  const overlaps: MutualFreeWindow[] = [];
+
+  for (const u of userFree) {
+    for (const f of friendFree) {
+      const start = Math.max(u.startHour, f.startHour);
+      const end = Math.min(u.endHour, f.endHour);
+
+      if (end - start >= 0.5) {
+        // At least 30 minutes
+        overlaps.push({
+          startTime: formatDecimalHourToTime(start),
+          endTime: formatDecimalHourToTime(end),
+          durationMinutes: Math.round((end - start) * 60),
+        });
+      }
+    }
+  }
+
+  return overlaps;
+}
+
