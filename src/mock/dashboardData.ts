@@ -170,6 +170,17 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
     ],
     scheduleNotes: 'Free for coffee near the main gate.',
   },
+  {
+    id: 'f-7',
+    name: 'Joshua Emmanuel',
+    initials: 'J',
+    status: 'unknown',
+    isPrivate: true,
+    hasSchedule: false,
+    groups: ['bora', 'courtside', 'dyd'],
+    freeSlots: [],
+    scheduleNotes: 'Schedule is set to private.',
+  },
 ];
 
 /**
