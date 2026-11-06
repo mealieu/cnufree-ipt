@@ -170,6 +170,17 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
     ],
     scheduleNotes: 'Free for coffee near the main gate.',
   },
+  {
+    id: 'f-7',
+    name: 'Joshua Emmanuel',
+    initials: 'J',
+    status: 'unknown',
+    isPrivate: true,
+    hasSchedule: false,
+    groups: ['bora', 'courtside', 'dyd'],
+    freeSlots: [],
+    scheduleNotes: 'Schedule is set to private.',
+  },
 ];
 
 /**
@@ -244,7 +255,7 @@ export function calculateBestWindow(
 
   for (const slot of candidateSlots) {
     const overlappingFriends = activeFriends.filter((friend) =>
-      friend.freeSlots.some(
+      friend.freeSlots?.some(
         (fs) => fs.startHour <= slot.start && fs.endHour >= slot.end
       )
     );

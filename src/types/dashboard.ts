@@ -21,12 +21,14 @@ export interface FriendAvailability {
   name: string;
   initials: string;
   avatarUrl?: string;
-  status: 'free' | 'busy';
-  untilTime: string;          // e.g. "10:30AM" or "3:00AM"
+  status: 'free' | 'busy' | 'unknown';
+  isPrivate?: boolean;
+  hasSchedule?: boolean;
+  untilTime?: string;          // e.g. "10:30AM" or "3:00AM"
   nextActivity?: string;      // e.g. "3:00pm AL212"
   currentActivity?: string;   // e.g. "Networking D216"
   groups: Array<'bora' | 'courtside' | 'dyd'>;
-  freeSlots: Array<{ startHour: number; endHour: number }>;
+  freeSlots?: Array<{ startHour: number; endHour: number }>;
   scheduleNotes?: string;
 }
 
