@@ -1,4 +1,4 @@
-export type FriendGroupId = 'all' | 'bora' | 'courtside' | 'dyd';
+export type FriendGroupId = 'all' | 'bora' | 'courtside' | 'dyd' | (string & {});
 
 export interface FriendGroupOption {
   id: FriendGroupId;

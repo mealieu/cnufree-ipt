@@ -213,10 +213,19 @@ export function filterFriendsByGroup(
   friends: FriendAvailability[],
   groupId: FriendGroupId
 ): FriendAvailability[] {
+  const seen = new Set<string>();
+  const uniqueFriends = friends.filter((friend) => {
+    if (seen.has(friend.id)) {
+      return false;
+    }
+    seen.add(friend.id);
+    return true;
+  });
+
   if (groupId === 'all') {
-    return friends;
+    return uniqueFriends;
   }
-  return friends.filter((f) => f.groups.includes(groupId as 'bora' | 'courtside' | 'dyd'));
+  return uniqueFriends.filter((f) => f.groups.includes(groupId as 'bora' | 'courtside' | 'dyd'));
 }
 
 /**
