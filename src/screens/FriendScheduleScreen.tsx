@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,125 +9,146 @@ import {
   Platform,
   StatusBar as RNStatusBar,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import Svg, { Path } from 'react-native-svg';
 import { FriendAvailability, FriendScheduleItem } from '../types/dashboard';
 import { COLORS } from '../constants/colors';
 import { FONTS } from '../constants/typography';
 import { UserAvatarSilhouette } from '../components/icons/NavIcons';
 import {
-  INITIAL_SCHEDULE_ACTIVITIES,
-  calculateMutualFreeWindows,
-  formatDecimalHourToTime,
+  SAMPLE_FRIEND_MARIA_DEBORAH,
+  DayScheduleTab,
+  getWeeklySchedule,
 } from '../mock/dashboardData';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
+import { TabId } from '../types/navigation';
 
 interface FriendScheduleScreenProps {
-  friend: FriendAvailability;
-  onBack: () => void;
+  friend?: FriendAvailability;
+  onBack?: () => void;
 }
 
+const HOUR_HEIGHT = 58;
+const START_HOUR = 8.0;
+const END_HOUR = 18.0;
+const TOTAL_HOURS = END_HOUR - START_HOUR; // 10 hours
+
+const TIMELINE_HOURS = [
+  { hour: 8, label: '8 AM' },
+  { hour: 9, label: '9 AM' },
+  { hour: 10, label: '10 AM' },
+  { hour: 11, label: '11 AM' },
+  { hour: 12, label: '12 AM' }, // Matches exact Figma screenshot label "12 AM"
+  { hour: 13, label: '1 PM' },
+  { hour: 14, label: '2 PM' },
+  { hour: 15, label: '3 PM' },
+  { hour: 16, label: '4 PM' },
+  { hour: 17, label: '5 PM' },
+  { hour: 18, label: '6 PM' },
+];
+
 export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
-  friend,
-  onBack,
+  friend = SAMPLE_FRIEND_MARIA_DEBORAH,
+  onBack = () => console.log('Navigate back'),
 }) => {
-  const [selectedItem, setSelectedItem] = useState<FriendScheduleItem | null>(null);
+  // State for view controls (Daily vs Weekly) - Defaults to 'weekly' to match Figma screenshot exactly
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('weekly');
 
-  const isVacant = friend.status === 'free';
+  // State for week navigation offset (0 = current week displayed in Figma mockup)
+  const [weekOffset, setWeekOffset] = useState<number>(0);
 
-  // Compute friend's schedule items (use structured schedule or fallback from freeSlots)
+  // State for selected day selector tab (defaults to 'tue' as highlighted in Figma reference)
+  const [selectedDayId, setSelectedDayId] = useState<string>('tue');
+
+  // State for active bottom navigation tab (defaults to 'home' as highlighted in Figma reference)
+  const [activeNavTab, setActiveNavTab] = useState<TabId>('home');
+
+  // Dynamic weekly schedule based on current weekOffset
+  const currentWeekSchedule = useMemo(() => {
+    return getWeeklySchedule(weekOffset);
+  }, [weekOffset]);
+
+  // Find the selected day configuration within the current week
+  const activeDayConfig: DayScheduleTab = useMemo(() => {
+    return (
+      currentWeekSchedule.days.find((d) => d.id === selectedDayId) ||
+      currentWeekSchedule.days[1] // Default to Tuesday
+    );
+  }, [currentWeekSchedule, selectedDayId]);
+
+  // Schedule items for the active day:
+  // If a custom friend (not Maria Deborah) was passed with a custom schedule, preserve it on Tuesday of week 0;
+  // otherwise, render the active day's rich timetable.
   const scheduleItems: FriendScheduleItem[] = useMemo(() => {
-    if (friend.schedule && friend.schedule.length > 0) {
+    if (
+      weekOffset === 0 &&
+      selectedDayId === 'tue' &&
+      friend.id !== SAMPLE_FRIEND_MARIA_DEBORAH.id &&
+      friend.schedule &&
+      friend.schedule.length > 0
+    ) {
       return friend.schedule;
     }
-    return [
-      {
-        id: 'fallback-1',
-        title: 'Morning Class',
-        startTime: '8:00 AM',
-        endTime: '10:30 AM',
-        startHour: 8.0,
-        endHour: 10.5,
-        room: 'Main Hall',
-        isBusy: friend.status === 'busy',
-      },
-      {
-        id: 'fallback-2',
-        title: 'Midday Open Window',
-        startTime: '10:30 AM',
-        endTime: '1:00 PM',
-        startHour: 10.5,
-        endHour: 13.0,
-        room: 'Library',
-        isBusy: false,
-      },
-      {
-        id: 'fallback-3',
-        title: 'Afternoon Laboratory',
-        startTime: '1:00 PM',
-        endTime: '3:30 PM',
-        startHour: 13.0,
-        endHour: 15.5,
-        room: 'Lab D216',
-        isBusy: true,
-      },
-      {
-        id: 'fallback-4',
-        title: 'Evening Free Window',
-        startTime: '3:30 PM',
-        endTime: '9:00 PM',
-        startHour: 15.5,
-        endHour: 21.0,
-        room: 'Campus Commons',
-        isBusy: false,
-      },
-    ];
+    return activeDayConfig.items;
+  }, [friend, activeDayConfig, weekOffset, selectedDayId]);
+
+  // Dynamic header title: "Agna's schedule" or "<nickname>'s schedule"
+  const headerTitle = useMemo(() => {
+    if (friend.nickname) {
+      return `${friend.nickname}’s schedule`;
+    }
+    const firstName = friend.name ? friend.name.split(' ')[0] : 'Agna';
+    return `${firstName}’s schedule`;
   }, [friend]);
 
-  // Compute mutual free time windows with Bernadette
-  const mutualWindows = useMemo(() => {
-    return calculateMutualFreeWindows(INITIAL_SCHEDULE_ACTIVITIES, friend);
+  // Friend subtitle: e.g. "DYD Friend"
+  const friendSubtitle = useMemo(() => {
+    if (friend.relationship) {
+      return friend.relationship;
+    }
+    if (friend.groups?.includes('dyd')) return 'DYD Friend';
+    if (friend.groups?.includes('bora')) return 'Bora Friend';
+    if (friend.groups?.includes('courtside')) return 'Court Side Friend';
+    return 'DYD Friend';
   }, [friend]);
 
-  const totalMutualMinutes = useMemo(() => {
-    return mutualWindows.reduce((acc, cur) => acc + cur.durationMinutes, 0);
-  }, [mutualWindows]);
+  // Handlers for week navigation
+  const handlePrevWeek = useCallback(() => {
+    setWeekOffset((prev) => prev - 1);
+  }, []);
 
-  const formatMinutes = (mins: number) => {
-    const hrs = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (m === 0) return `${hrs}h`;
-    return `${hrs}h ${m}m`;
-  };
+  const handleNextWeek = useCallback(() => {
+    setWeekOffset((prev) => prev + 1);
+  }, []);
 
-  // Timeline axis setup (8:00 AM to 9:00 PM)
-  const dayStartHour = 8.0;
-  const dayEndHour = 21.0;
-  const totalHours = dayEndHour - dayStartHour;
+  // Handlers for daily navigation in daily view mode
+  const handlePrevDay = useCallback(() => {
+    const days = currentWeekSchedule.days;
+    const currentIndex = days.findIndex((d) => d.id === selectedDayId);
+    if (currentIndex > 0) {
+      setSelectedDayId(days[currentIndex - 1].id);
+    } else {
+      // Step to Sunday of previous week
+      setWeekOffset((prev) => prev - 1);
+      setSelectedDayId('sun');
+    }
+  }, [currentWeekSchedule, selectedDayId]);
 
-  const axisMarkers = [
-    { label: '8:00AM', hour: 8.0 },
-    { label: '1:00PM', hour: 13.0 },
-    { label: '3:00 PM', hour: 15.0 },
-  ];
+  const handleNextDay = useCallback(() => {
+    const days = currentWeekSchedule.days;
+    const currentIndex = days.findIndex((d) => d.id === selectedDayId);
+    if (currentIndex < days.length - 1) {
+      setSelectedDayId(days[currentIndex + 1].id);
+    } else {
+      // Step to Monday of next week
+      setWeekOffset((prev) => prev + 1);
+      setSelectedDayId('mon');
+    }
+  }, [currentWeekSchedule, selectedDayId]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* ================= TOP NAVIGATION APP BAR ================= */}
-      <View style={styles.topAppBar}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={styles.backButton}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Back to Dashboard"
-        >
-          <Text style={styles.backChevron}>‹</Text>
-          <Text style={styles.backButtonText}>Dashboard</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.screenHeaderTitle}>Friend's Routine</Text>
-
-        <View style={{ width: 85 }} />
-      </View>
+      <StatusBar style="dark" />
 
       <ScrollView
         style={styles.scrollView}
@@ -135,290 +156,356 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentContainer}>
-          {/* ================= 1. FRIEND PROFILE & STATUS HEADER ================= */}
-          <View style={styles.profileHeaderCard}>
-            <View style={styles.profileRow}>
-              {/* Avatar with Live Status Indicator Ring */}
-              <View style={styles.avatarWrapper}>
-                <View style={styles.avatarCircle}>
-                  <UserAvatarSilhouette size={48} color="#6F8472" />
-                </View>
-                <View
-                  style={[
-                    styles.statusRingDot,
-                    isVacant ? styles.statusRingVacant : styles.statusRingBusy,
-                  ]}
+          {/* ================= 1. HEADER SECTION (Figma Reference) ================= */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={onBack}
+              style={styles.backButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Back to Previous Screen"
+            >
+              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M15 19L8 12L15 5"
+                  stroke="#172019"
+                  strokeWidth={2.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-              </View>
+              </Svg>
+            </TouchableOpacity>
 
-              {/* Friend Info & Real-Time Badge */}
-              <View style={styles.profileInfo}>
-                <Text style={styles.friendName}>{friend.name}</Text>
-                <Text style={styles.statusSubtext}>
-                  {isVacant
-                    ? `Free until ${friend.untilTime}${friend.nextActivity ? ` | Next: ${friend.nextActivity}` : ''}`
-                    : `Busy until ${friend.untilTime}${friend.currentActivity ? ` | ${friend.currentActivity}` : ''}`}
-                </Text>
+            <Text style={styles.headerTitle}>{headerTitle}</Text>
+          </View>
 
-                <View style={styles.badgeRow}>
-                  <View
-                    style={[
-                      styles.statusPillBadge,
-                      isVacant ? styles.pillVacant : styles.pillBusy,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusPillText,
-                        isVacant ? styles.textVacant : styles.textBusy,
-                      ]}
-                    >
-                      {isVacant ? '● VACANT NOW' : '■ CURRENTLY BUSY'}
-                    </Text>
-                  </View>
-                </View>
-              </View>
+          {/* ================= 2. PROFILE SECTION (Figma Reference) ================= */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarContainer}>
+              <UserAvatarSilhouette size={72} color="#5F6F7E" bgColor="#DEE5ED" />
             </View>
 
-            {/* Location & Group Affiliations */}
-            <View style={styles.metaRow}>
-              {friend.currentLocation && (
-                <View style={styles.locationTag}>
-                  <Text style={styles.locationText}>📍 {friend.currentLocation}</Text>
-                </View>
-              )}
-
-              <View style={styles.groupsTagRow}>
-                {friend.groups.map((grp) => {
-                  const label =
-                    grp === 'bora' ? 'Bora' : grp === 'courtside' ? 'Court Side' : 'DYD';
-                  return (
-                    <View key={grp} style={styles.groupBadge}>
-                      <Text style={styles.groupBadgeText}>{label}</Text>
-                    </View>
-                  );
-                })}
-              </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.friendName}>{friend.name || 'Maria Deborah'}</Text>
+              <Text style={styles.friendSubtitle}>{friendSubtitle}</Text>
             </View>
           </View>
 
-          {/* ================= 2. MUTUAL FREE TIME HIGHLIGHT BANNER ================= */}
-          <View style={styles.mutualBanner}>
-            <View style={styles.mutualBannerHeader}>
-              <View style={styles.mutualTitleRow}>
-                <Text style={styles.sparkleIcon}>✨</Text>
-                <Text style={styles.mutualTitle}>MUTUAL FREE WINDOWS</Text>
-              </View>
+          {/* ================= 3. DATE DISPLAY & VIEW CONTROLS ================= */}
+          {/* Currently selected full date */}
+          <Text style={styles.dateDisplay}>{activeDayConfig.fullDate}</Text>
 
-              {mutualWindows.length > 0 && (
-                <View style={styles.totalSharedPill}>
-                  <Text style={styles.totalSharedText}>
-                    {formatMinutes(totalMutualMinutes)} Total Shared
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {mutualWindows.length > 0 ? (
-              <View>
-                <Text style={styles.mutualDescription}>
-                  You and {friend.name.split(' ')[0]} share{' '}
-                  <Text style={styles.boldGreenText}>
-                    {mutualWindows.length} open window{mutualWindows.length > 1 ? 's' : ''}
-                  </Text>{' '}
-                  today:
-                </Text>
-
-                <View style={styles.chipsRow}>
-                  {mutualWindows.map((win, idx) => (
-                    <View key={idx} style={styles.mutualChip}>
-                      <Text style={styles.chipTimeText}>
-                        🕒 {win.startTime} – {win.endTime}
-                      </Text>
-                      <Text style={styles.chipDurationText}>
-                        ({formatMinutes(win.durationMinutes)})
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.noMutualText}>
-                No overlapping free daytime windows found today.
-              </Text>
-            )}
-          </View>
-
-          {/* ================= 3. FRIEND DAILY SCHEDULE TIMELINE CARD ================= */}
-          <View style={styles.timelineCard}>
-            <View style={styles.timelineHeaderRow}>
-              <Text style={styles.timelineTitle}>
-                {friend.name.split(' ')[0]}'s Timeline
-              </Text>
-              <Text style={styles.timelineBadge}>8:00 AM – 9:00 PM</Text>
-            </View>
-
-            {/* Segmented Timeline Bar */}
-            <View style={styles.timelineBar}>
-              {scheduleItems.map((item, index) => {
-                const duration = Math.max(0.5, item.endHour - item.startHour);
-                const isSelected = selectedItem?.id === item.id;
-
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[
-                      styles.segment,
-                      { flex: duration },
-                      item.isBusy ? styles.segmentOccupied : styles.segmentFree,
-                      isSelected && styles.segmentSelected,
-                      index === 0 && styles.firstSegment,
-                      index === scheduleItems.length - 1 && styles.lastSegment,
-                    ]}
-                    onPress={() =>
-                      setSelectedItem((prev) => (prev?.id === item.id ? null : item))
-                    }
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item.title}, ${item.startTime} to ${item.endTime}, ${item.isBusy ? 'Occupied' : 'Free'}`}
-                  />
-                );
-              })}
-            </View>
-
-            {/* Time Labels Axis Alignment */}
-            <View style={styles.timeMarkersRow}>
-              {axisMarkers.map((marker, idx) => {
-                const leftPercent = ((marker.hour - dayStartHour) / totalHours) * 100;
-                return (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.markerPositionWrapper,
-                      { left: `${Math.max(2, Math.min(leftPercent, 88))}%` },
-                    ]}
-                  >
-                    <Text style={styles.markerText}>{marker.label}</Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Tap Inspection Tooltip */}
-            {selectedItem && (
-              <View style={styles.inspectionTooltip}>
-                <View style={styles.tooltipTopRow}>
-                  <View
-                    style={[
-                      styles.tooltipBadge,
-                      selectedItem.isBusy ? styles.tooltipBadgeBusy : styles.tooltipBadgeFree,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.tooltipBadgeText,
-                        selectedItem.isBusy ? styles.textBusyMini : styles.textFreeMini,
-                      ]}
-                    >
-                      {selectedItem.isBusy ? 'OCCUPIED' : 'VACANT'}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.tooltipTime}>
-                    🕒 {selectedItem.startTime} – {selectedItem.endTime}
-                  </Text>
-
-                  <TouchableOpacity
-                    onPress={() => setSelectedItem(null)}
-                    style={styles.closeTooltip}
-                  >
-                    <Text style={styles.closeTooltipText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.tooltipTitle}>{selectedItem.title}</Text>
-                {selectedItem.room && (
-                  <Text style={styles.tooltipRoom}>📍 Room: {selectedItem.room}</Text>
-                )}
-                {selectedItem.description && (
-                  <Text style={styles.tooltipDesc}>{selectedItem.description}</Text>
-                )}
-              </View>
-            )}
-
-            <Text style={styles.helperText}>
-              💡 Tap any block above to inspect subject, room, and status
-            </Text>
-          </View>
-
-          {/* ================= 4. FULL CHRONOLOGICAL ROUTINE BREAKDOWN ================= */}
-          <View style={styles.breakdownSection}>
-            <Text style={styles.breakdownSectionTitle}>Chronological Routine</Text>
-
-            {scheduleItems.map((item) => (
-              <View
-                key={item.id}
+          {/* Pill-shaped toggle switch for "Daily" and "Weekly" views */}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleOption,
+                viewMode === 'daily' && styles.toggleOptionActive,
+              ]}
+              onPress={() => setViewMode('daily')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Daily Schedule View"
+              accessibilityState={{ selected: viewMode === 'daily' }}
+            >
+              <Text
                 style={[
-                  styles.routineCard,
-                  item.isBusy ? styles.routineCardBusy : styles.routineCardFree,
+                  styles.toggleText,
+                  viewMode === 'daily'
+                    ? styles.toggleTextActive
+                    : styles.toggleTextInactive,
                 ]}
               >
-                {/* Left Time Column */}
-                <View style={styles.timeCol}>
-                  <Text style={styles.timeStartText}>{item.startTime}</Text>
-                  <Text style={styles.timeEndText}>{item.endTime}</Text>
-                </View>
+                Daily
+              </Text>
+            </TouchableOpacity>
 
-                {/* Right Content */}
-                <View style={styles.detailCol}>
-                  <View style={styles.detailHeaderRow}>
-                    <Text style={styles.detailTitle} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <View
+            <TouchableOpacity
+              style={[
+                styles.toggleOption,
+                viewMode === 'weekly' && styles.toggleOptionActive,
+              ]}
+              onPress={() => setViewMode('weekly')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Weekly Schedule View"
+              accessibilityState={{ selected: viewMode === 'weekly' }}
+            >
+              <Text
+                style={[
+                  styles.toggleText,
+                  viewMode === 'weekly'
+                    ? styles.toggleTextActive
+                    : styles.toggleTextInactive,
+                ]}
+              >
+                Weekly
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ================= 4. NAVIGATION BANNER ================= */}
+          {/* When in Weekly view: Dark Green Weekly Navigation Banner with < [ Sunday, October 25,2026 ] > */}
+          {/* When in Daily view: Interactive Day Stepper Banner */}
+          {viewMode === 'weekly' ? (
+            <View style={styles.weeklyBanner}>
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handlePrevWeek}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Previous Week"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 19L8 12L15 5"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+
+              <View style={styles.weeklyIndicatorPill}>
+                <Text style={styles.weeklyIndicatorText}>
+                  {currentWeekSchedule.weekIndicator}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handleNextWeek}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Next Week"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M9 5L16 12L9 19"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.weeklyBanner}>
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handlePrevDay}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Previous Day"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 19L8 12L15 5"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+
+              <View style={styles.weeklyIndicatorPill}>
+                <Text style={styles.weeklyIndicatorText}>
+                  {activeDayConfig.fullDate}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.bannerArrowBtn}
+                onPress={handleNextDay}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Next Day"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M9 5L16 12L9 19"
+                    stroke={COLORS.weeklyBannerArrow}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ================= 5. DAY SELECTOR TABS ================= */}
+          <View style={styles.dayTabsWrapper}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.dayTabsScroll}
+            >
+              {currentWeekSchedule.days.map((tab) => {
+                const isActive = tab.id === selectedDayId;
+                return (
+                  <TouchableOpacity
+                    key={tab.id}
+                    style={[styles.dayTab, isActive && styles.dayTabActive]}
+                    onPress={() => setSelectedDayId(tab.id)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${tab.dayAbbrev} ${tab.dayNumber}`}
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <Text
                       style={[
-                        styles.miniBadge,
-                        item.isBusy ? styles.miniBadgeBusy : styles.miniBadgeFree,
+                        styles.dayAbbrevText,
+                        isActive && styles.dayAbbrevTextActive,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.miniBadgeText,
-                          item.isBusy ? styles.miniTextBusy : styles.miniTextFree,
-                        ]}
+                      {tab.dayAbbrev}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.dayNumberText,
+                        isActive && styles.dayNumberTextActive,
+                      ]}
+                    >
+                      {tab.dayNumber}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* ================= 6. CHRONOLOGICAL TIME BLOCKS (TIMELINE CONTAINER) ================= */}
+          <View style={styles.timelineBox}>
+            {/* Left Column: Vertical Time Axis (8 AM down to 6 PM) */}
+            <View style={styles.timeAxisColumn}>
+              {TIMELINE_HOURS.map((item, index) => (
+                <View
+                  key={item.hour}
+                  style={[
+                    styles.timeAxisItem,
+                    { top: index * HOUR_HEIGHT - 7 },
+                  ]}
+                >
+                  <Text style={styles.timeAxisLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Right Column: Grid Lines and Chronological Time Blocks */}
+            <View
+              style={[
+                styles.scheduleGridArea,
+                { height: TOTAL_HOURS * HOUR_HEIGHT },
+              ]}
+            >
+              {/* Horizontal Grid Lines */}
+              {TIMELINE_HOURS.map((item, index) => (
+                <View
+                  key={`line-${item.hour}`}
+                  style={[styles.gridLine, { top: index * HOUR_HEIGHT }]}
+                />
+              ))}
+
+              {/* Chronologically Positioned Time Blocks */}
+              {scheduleItems.map((item) => {
+                const clampedStart = Math.max(START_HOUR, item.startHour);
+                const clampedEnd = Math.min(END_HOUR, item.endHour);
+                const duration = Math.max(0.5, clampedEnd - clampedStart);
+
+                const blockTop = (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
+                const blockHeight = duration * HOUR_HEIGHT - 4;
+
+                if (item.isBusy) {
+                  /* Busy/Class Time Block */
+                  return (
+                    <View
+                      key={item.id}
+                      style={[
+                        styles.busyBlock,
+                        {
+                          top: blockTop,
+                          height: blockHeight,
+                        },
+                      ]}
+                    >
+                      <View style={styles.busyTopRow}>
+                        <Text style={styles.busyTitle} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={styles.busyTimeRange}>
+                          {item.timeRange ||
+                            `${item.startTime}–${item.endTime}`}
+                        </Text>
+                      </View>
+                      {item.room && (
+                        <Text style={styles.busyRoom} numberOfLines={1}>
+                          {item.room}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                }
+
+                /* Free Time Block */
+                return (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.freeBlock,
+                      {
+                        top: blockTop,
+                        height: blockHeight,
+                      },
+                    ]}
+                  >
+                    <View style={styles.freeContentRow}>
+                      <Svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        style={styles.freeCheckIcon}
                       >
-                        {item.isBusy ? 'BUSY' : 'VACANT'}
+                        <Path
+                          d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                          stroke="#2C3A2E"
+                          strokeWidth={2.2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                      <Text style={styles.freeText} numberOfLines={1}>
+                        {item.title.startsWith('Free')
+                          ? item.title
+                          : `Free - ${item.startTime} - ${item.endTime}`}
                       </Text>
                     </View>
                   </View>
-
-                  {item.room && (
-                    <View style={styles.roomRow}>
-                      <Text style={styles.roomLabel}>📍 {item.room}</Text>
-                      {item.code && (
-                        <View style={styles.codeTag}>
-                          <Text style={styles.codeTagText}>{item.code}</Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-
-                  {item.description && (
-                    <Text style={styles.descText} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
+                );
+              })}
+            </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Bottom Navigation Bar */}
+      {/* ================= 7. BOTTOM NAVIGATION BAR (Figma Reference) ================= */}
       <BottomNavBar
-        activeTab="home"
-        onTabChange={() => onBack()}
+        activeTab={activeNavTab}
+        onTabChange={(tab) => {
+          setActiveNavTab(tab);
+          if (tab === 'home') {
+            onBack();
+          }
+        }}
         notificationBadgeCount={0}
       />
     </SafeAreaView>
@@ -431,547 +518,387 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cream,
     paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) : 0,
   },
-  topAppBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: COLORS.cream,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(35, 50, 38, 0.1)',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EAE5D8',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  backChevron: {
-    fontSize: 20,
-    fontFamily: FONTS.bold,
-    color: COLORS.darkGreen,
-    marginRight: 4,
-    lineHeight: 20,
-  },
-  backButtonText: {
-    fontSize: 13,
-    fontFamily: FONTS.bold,
-    color: COLORS.darkGreen,
-  },
-  screenHeaderTitle: {
-    fontSize: 15,
-    fontFamily: FONTS.bold,
-    color: COLORS.darkGreen,
-  },
   scrollView: {
     flex: 1,
     backgroundColor: COLORS.cream,
   },
   scrollContent: {
-    paddingBottom: 85,
+    paddingBottom: 95, // Leaves space so bottom nav never overlaps schedule box
   },
   contentContainer: {
     width: '100%',
     maxWidth: 480,
     alignSelf: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  profileHeaderCard: {
-    backgroundColor: '#9AAFA0', // Sage green from mockup
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+
+  /* 1. Header Styles */
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  headerTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 23,
+    color: '#172019',
+    letterSpacing: -0.2,
+  },
+
+  /* 2. Profile Section Styles */
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    gap: 16,
+  },
+  avatarContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#DEE5ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  friendName: {
+    fontFamily: FONTS.bold,
+    fontSize: 21,
+    color: '#172019',
+    letterSpacing: -0.2,
+  },
+  friendSubtitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: '#4B594E',
+    marginTop: 3,
+  },
+
+  /* 3. Date Display & Toggle Controls */
+  dateDisplay: {
+    fontFamily: FONTS.medium,
+    fontSize: 14.5,
+    color: '#344338',
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#CCD7CA',
+    borderRadius: 24,
+    padding: 4,
+    marginBottom: 14,
     ...Platform.select({
       ios: {
-        shadowColor: '#172B1E',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      },
+    }),
+  },
+  toggleOption: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleOptionActive: {
+    backgroundColor: '#1C231F',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 5,
+        shadowOpacity: 0.16,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 5px rgba(0,0,0,0.18)',
+      },
+    }),
+  },
+  toggleText: {
+    fontSize: 14,
+    letterSpacing: 0.1,
+  },
+  toggleTextActive: {
+    fontFamily: FONTS.bold,
+    color: '#FFFFFF',
+  },
+  toggleTextInactive: {
+    fontFamily: FONTS.medium,
+    color: '#2F3D32',
+  },
+
+  /* 4. Weekly Navigation Banner */
+  weeklyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.weeklyBannerBg,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 3.5,
       },
       android: {
         elevation: 3,
       },
       web: {
-        boxShadow: '0 2px 8px rgba(23, 43, 30, 0.1)',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
       },
     }),
   },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  avatarWrapper: {
-    position: 'relative',
-  },
-  avatarCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#EAE6D8',
-    borderWidth: 2,
-    borderColor: '#D4E2D7',
+  bannerArrowBtn: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusRingDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  statusRingVacant: {
-    backgroundColor: '#2ECC71',
-  },
-  statusRingBusy: {
-    backgroundColor: '#C0392B',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  friendName: {
-    fontSize: 17.5,
-    fontFamily: FONTS.bold,
-    color: '#142218',
-    letterSpacing: -0.2,
-  },
-  statusSubtext: {
-    fontSize: 12,
-    fontFamily: FONTS.medium,
-    color: '#283B2F',
-    marginTop: 2,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    marginTop: 6,
-  },
-  statusPillBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1.2,
-  },
-  pillVacant: {
-    backgroundColor: '#D7F1E1',
-    borderColor: '#34D399',
-  },
-  pillBusy: {
-    backgroundColor: '#FDECEB',
-    borderColor: '#F5B7B1',
-  },
-  statusPillText: {
-    fontSize: 10,
-    fontFamily: FONTS.bold,
-    letterSpacing: 0.3,
-  },
-  textVacant: {
-    color: '#136738',
-  },
-  textBusy: {
-    color: '#C0392B',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  locationTag: {
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  locationText: {
-    fontSize: 11,
-    fontFamily: FONTS.medium,
-    color: '#19492A',
-  },
-  groupsTagRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  groupBadge: {
-    backgroundColor: '#204F43',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  groupBadgeText: {
-    fontSize: 10.5,
-    fontFamily: FONTS.bold,
-    color: '#FFFFFF',
-  },
-  mutualBanner: {
-    backgroundColor: '#E7F2EB',
-    borderRadius: 14,
-    padding: 14,
-    marginVertical: 8,
-    borderWidth: 1.5,
-    borderColor: '#B8DAC4',
-  },
-  mutualBannerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  mutualTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sparkleIcon: {
-    fontSize: 14,
-  },
-  mutualTitle: {
-    fontSize: 11,
-    fontFamily: FONTS.bold,
-    color: '#1A5331',
-    letterSpacing: 0.5,
-  },
-  totalSharedPill: {
-    backgroundColor: '#D1EBD9',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  totalSharedText: {
-    fontSize: 10.5,
-    fontFamily: FONTS.bold,
-    color: '#13582E',
-  },
-  mutualDescription: {
-    fontSize: 12.5,
-    fontFamily: FONTS.regular,
-    color: '#284634',
-    marginBottom: 8,
-  },
-  boldGreenText: {
-    fontFamily: FONTS.bold,
-    color: '#0D4522',
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  mutualChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#A8D2B7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  chipTimeText: {
-    fontSize: 11.5,
-    fontFamily: FONTS.bold,
-    color: '#155B32',
-  },
-  chipDurationText: {
-    fontSize: 10.5,
-    fontFamily: FONTS.medium,
-    color: '#4B735B',
-  },
-  noMutualText: {
-    fontSize: 12,
-    fontFamily: FONTS.regular,
-    color: '#556E5E',
-    fontStyle: 'italic',
-  },
-  timelineCard: {
-    backgroundColor: COLORS.scheduleCardBg,
-    borderRadius: 16,
+  weeklyIndicatorPill: {
+    backgroundColor: COLORS.weeklyBannerPillBg,
+    paddingVertical: 6,
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 12,
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weeklyIndicatorText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: COLORS.weeklyBannerText,
+    letterSpacing: 0.1,
+  },
+
+  /* 5. Day Selector Tabs */
+  dayTabsWrapper: {
+    marginBottom: 16,
+  },
+  dayTabsScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 3,
+    gap: 7,
+  },
+  dayTab: {
+    width: 48,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: COLORS.dayTabBg,
+    alignItems: 'center',
+    justifyContent: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.22,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 1.5 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
       },
       android: {
-        elevation: 6,
+        elevation: 2,
       },
       web: {
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.22)',
+        boxShadow: '0 1.5px 3.5px rgba(0,0,0,0.1)',
       },
     }),
   },
-  timelineHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  dayTabActive: {
+    backgroundColor: COLORS.dayTabActiveBg,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.22,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+      },
+    }),
   },
-  timelineTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 17,
-    color: COLORS.scheduleGreenText,
-  },
-  timelineBadge: {
+  dayAbbrevText: {
     fontFamily: FONTS.medium,
     fontSize: 11,
-    color: COLORS.scheduleSubText,
-  },
-  timelineBar: {
-    height: 22,
-    borderRadius: 11,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    backgroundColor: COLORS.scheduleBarTrack,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.25)',
-  },
-  segment: {
-    height: '100%',
-  },
-  segmentOccupied: {
-    backgroundColor: COLORS.scheduleBarBusy,
-  },
-  segmentFree: {
-    backgroundColor: COLORS.scheduleBarFree,
-  },
-  segmentSelected: {
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    zIndex: 2,
-  },
-  firstSegment: {
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
-  },
-  lastSegment: {
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  timeMarkersRow: {
-    position: 'relative',
-    height: 22,
-    marginTop: 8,
-    width: '100%',
-  },
-  markerPositionWrapper: {
-    position: 'absolute',
-    transform: [{ translateX: -16 }],
-  },
-  markerText: {
-    fontFamily: FONTS.medium,
-    fontSize: 11.5,
-    color: 'rgba(255, 255, 255, 0.85)',
-    letterSpacing: 0.2,
-  },
-  inspectionTooltip: {
-    backgroundColor: '#26382B',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#3D5443',
-  },
-  tooltipTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  tooltipBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  tooltipBadgeBusy: {
-    backgroundColor: '#2ECC71',
-  },
-  tooltipBadgeFree: {
-    backgroundColor: '#D6EFE0',
-  },
-  tooltipBadgeText: {
-    fontFamily: FONTS.bold,
-    fontSize: 10,
-  },
-  textBusyMini: {
-    color: '#FFFFFF',
-  },
-  textFreeMini: {
-    color: '#1B7A43',
-  },
-  tooltipTime: {
-    fontFamily: FONTS.medium,
-    fontSize: 11,
-    color: '#BDD2C3',
-  },
-  closeTooltip: {
-    padding: 4,
-  },
-  closeTooltipText: {
-    fontSize: 12,
-    color: '#8EA991',
-    fontWeight: 'bold',
-  },
-  tooltipTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 13.5,
-    color: '#FFFFFF',
+    color: COLORS.dayTabTextSubtle,
     marginBottom: 2,
   },
-  tooltipRoom: {
-    fontFamily: FONTS.medium,
-    fontSize: 11.5,
-    color: '#34D399',
+  dayAbbrevTextActive: {
+    color: '#DCE8DE',
   },
-  tooltipDesc: {
-    fontFamily: FONTS.regular,
-    fontSize: 11,
-    color: '#BDD2C3',
-    marginTop: 2,
-  },
-  helperText: {
-    fontFamily: FONTS.regular,
-    fontSize: 10,
-    color: '#8EA991',
-    marginTop: 8,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  breakdownSection: {
-    marginTop: 14,
-  },
-  breakdownSectionTitle: {
-    fontSize: 16,
+  dayNumberText: {
     fontFamily: FONTS.bold,
-    color: COLORS.darkGreen,
-    marginBottom: 10,
+    fontSize: 15,
+    color: COLORS.dayTabTextDark,
   },
-  routineCard: {
+  dayNumberTextActive: {
+    color: '#FFFFFF',
+  },
+
+  /* 6. Chronological Time Blocks (Timeline Container) */
+  timelineBox: {
     flexDirection: 'row',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
+    borderWidth: 1.4,
+    borderColor: COLORS.timelineContainerBorder,
+    borderRadius: 14,
+    backgroundColor: COLORS.timelineContainerBg,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#172B1E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(23,43,30,0.04)',
+      },
+    }),
   },
-  routineCardBusy: {
-    backgroundColor: '#EFF6F1',
-    borderColor: '#C6DDD0',
-    borderLeftWidth: 5,
-    borderLeftColor: COLORS.scheduleBarBusy,
+  timeAxisColumn: {
+    width: 44,
+    position: 'relative',
+    marginRight: 6,
   },
-  routineCardFree: {
-    backgroundColor: '#F8FAF8',
-    borderColor: '#DEE8E0',
-    borderLeftWidth: 5,
-    borderLeftColor: '#34D399',
+  timeAxisItem: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'flex-start',
   },
-  timeCol: {
-    width: 72,
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#E0EAE2',
-    paddingRight: 8,
-  },
-  timeStartText: {
-    fontSize: 11.5,
-    fontFamily: FONTS.bold,
-    color: '#142218',
-  },
-  timeEndText: {
-    fontSize: 10.5,
+  timeAxisLabel: {
     fontFamily: FONTS.medium,
-    color: '#556E5E',
-    marginTop: 2,
+    fontSize: 10.5,
+    color: '#556858',
+    letterSpacing: 0.1,
   },
-  detailCol: {
+  scheduleGridArea: {
     flex: 1,
-    paddingLeft: 10,
-    justifyContent: 'center',
+    position: 'relative',
   },
-  detailHeaderRow: {
+  gridLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DEE5DD',
+    borderStyle: 'dashed',
+  },
+
+  /* Free Time Block (Figma Reference) */
+  freeBlock: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    borderRadius: 14,
+    borderWidth: 1.4,
+    borderColor: COLORS.timelineFreeBorder,
+    borderStyle: 'dashed',
+    backgroundColor: COLORS.timelineFreeBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  freeContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  freeCheckIcon: {
+    marginRight: 2,
+  },
+  freeText: {
+    fontFamily: FONTS.bold,
+    fontSize: 12.5,
+    color: '#2A382C',
+    letterSpacing: -0.1,
+  },
+
+  /* Busy/Class Time Block (Figma Reference) */
+  busyBlock: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    borderRadius: 8,
+    backgroundColor: COLORS.timelineBusyBg,
+    borderLeftWidth: 4.5,
+    borderLeftColor: COLORS.timelineBusyAccent,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      },
+    }),
+  },
+  busyTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 6,
+    marginBottom: 4,
   },
-  detailTitle: {
+  busyTitle: {
+    fontFamily: FONTS.bold,
     fontSize: 13.5,
-    fontFamily: FONTS.bold,
-    color: '#142218',
+    color: '#1B242C',
     flex: 1,
+    marginRight: 8,
   },
-  miniBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  miniBadgeBusy: {
-    backgroundColor: '#FCEBEA',
-    borderColor: '#F5B7B1',
-  },
-  miniBadgeFree: {
-    backgroundColor: '#EAF7EE',
-    borderColor: '#34D399',
-  },
-  miniBadgeText: {
-    fontSize: 9,
-    fontFamily: FONTS.bold,
-  },
-  miniTextBusy: {
-    color: '#C0392B',
-  },
-  miniTextFree: {
-    color: '#136738',
-  },
-  roomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 3,
-  },
-  roomLabel: {
-    fontSize: 11,
+  busyTimeRange: {
     fontFamily: FONTS.medium,
-    color: '#1B7A43',
+    fontSize: 11.5,
+    color: '#5B6874',
   },
-  codeTag: {
-    backgroundColor: '#DAE8DF',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  codeTagText: {
-    fontSize: 9.5,
-    fontFamily: FONTS.bold,
-    color: '#214D35',
-  },
-  descText: {
-    fontSize: 11,
-    fontFamily: FONTS.regular,
-    color: '#556E5E',
-    marginTop: 3,
+  busyRoom: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
+    color: '#5B6874',
   },
 });
