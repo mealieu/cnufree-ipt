@@ -55,6 +55,7 @@ export const HomeScreen: React.FC = () => {
   // View all toggles
   const [showAllFree, setShowAllFree] = useState(false);
   const [showAllBusy, setShowAllBusy] = useState(false);
+  const [showAllUnknown, setShowAllUnknown] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Filtered friends
@@ -69,6 +70,15 @@ export const HomeScreen: React.FC = () => {
 
   const busyFriends = useMemo(() => {
     return filteredFriends.filter((f) => f.status === 'busy');
+  }, [filteredFriends]);
+
+  const unknownFriends = useMemo(() => {
+    return filteredFriends.filter(
+      (f) =>
+        f.status === 'unknown' ||
+        f.isPrivate === true ||
+        (f.status !== 'free' && f.status !== 'busy')
+    );
   }, [filteredFriends]);
 
   // Dynamically calculate Best Window Today for selected group
@@ -152,11 +162,20 @@ export const HomeScreen: React.FC = () => {
           <FriendAvailabilitySection
             freeFriends={freeFriends}
             busyFriends={busyFriends}
-            onSelectFriend={(friend) => setViewingFriend(friend)}
+            unknownFriends={unknownFriends}
+            onSelectFriend={(friend) => {
+              if (friend.isPrivate || friend.status === 'unknown') {
+                setSelectedFriend(friend);
+              } else {
+                setViewingFriend(friend);
+              }
+            }}
             onViewAllFree={() => setShowAllFree(!showAllFree)}
             onViewAllBusy={() => setShowAllBusy(!showAllBusy)}
+            onViewAllUnknown={() => setShowAllUnknown(!showAllUnknown)}
             showAllFree={showAllFree}
             showAllBusy={showAllBusy}
+            showAllUnknown={showAllUnknown}
           />
         </View>
       </ScrollView>

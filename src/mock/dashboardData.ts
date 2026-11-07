@@ -1242,7 +1242,7 @@ export function calculateMutualFreeWindows(
   const userFree = userActivities.filter((a) => !a.isBusy);
   const friendFree = friend.schedule
     ? friend.schedule.filter((s) => !s.isBusy)
-    : friend.freeSlots.map((fs, idx) => ({
+    : (friend.freeSlots || []).map((fs, idx) => ({
         id: `fs-${idx}`,
         title: 'Free Window',
         startTime: formatDecimalHourToTime(fs.startHour),
