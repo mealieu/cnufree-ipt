@@ -14,6 +14,66 @@ export const CURRENT_USER: UserProfile = {
   avatarUrl: undefined,
 };
 
+export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
+  {
+    id: 'b-1',
+    title: 'Free Window',
+    startTime: '8:00 AM',
+    endTime: '9:00 AM',
+    startHour: 8.0,
+    endHour: 9.0,
+    isBusy: false,
+  },
+  {
+    id: 'b-2',
+    title: 'UI/UX',
+    startTime: '9:00 AM',
+    endTime: '10:30 AM',
+    startHour: 9.0,
+    endHour: 10.5,
+    room: 'AL211A',
+    isBusy: true,
+  },
+  {
+    id: 'b-3',
+    title: 'Free Window',
+    startTime: '11:00 AM',
+    endTime: '12:00 PM',
+    startHour: 11.0,
+    endHour: 12.0,
+    isBusy: false,
+  },
+  {
+    id: 'b-4',
+    title: 'IPT2',
+    startTime: '12:00 PM',
+    endTime: '1:30 PM',
+    startHour: 12.0,
+    endHour: 13.5,
+    room: 'P216',
+    isBusy: true,
+  },
+  {
+    id: 'b-5',
+    title: 'THEN102',
+    startTime: '1:30 PM',
+    endTime: '3:00 PM',
+    startHour: 13.5,
+    endHour: 15.0,
+    room: 'RB412',
+    isBusy: true,
+  },
+  {
+    id: 'b-6',
+    title: 'Free Window',
+    startTime: '3:30 PM',
+    endTime: '6:00 PM',
+    startHour: 15.5,
+    endHour: 18.0,
+    isBusy: false,
+  },
+];
+
 export const FRIEND_GROUPS: FriendGroupOption[] = [
   { id: 'all', label: 'All Friends' },
   { id: 'bora', label: 'Bora' },
