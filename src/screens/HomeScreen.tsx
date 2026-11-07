@@ -47,7 +47,7 @@ export const HomeScreen: React.FC = () => {
   // Modals & Sheets
   const [isFullDayModalVisible, setIsFullDayModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendAvailability | null>(null);
-  const [viewingFriend, setViewingFriend] = useState<FriendAvailability | null>(null);
+  const [viewingSchedulePerson, setViewingSchedulePerson] = useState<FriendAvailability | 'me' | null>(null);
   const [isBestWindowModalVisible, setIsBestWindowModalVisible] = useState(false);
 
   // View all toggles
@@ -82,12 +82,12 @@ export const HomeScreen: React.FC = () => {
     }, 600);
   }, []);
 
-  // If viewing dedicated friend schedule screen (HS-10)
-  if (viewingFriend) {
+  // If viewing dedicated individual schedule screen (HS-10)
+  if (viewingSchedulePerson) {
     return (
       <FriendScheduleScreen
-        friend={viewingFriend}
-        onBack={() => setViewingFriend(null)}
+        friend={viewingSchedulePerson === 'me' ? null : viewingSchedulePerson}
+        onBack={() => setViewingSchedulePerson(null)}
       />
     );
   }
@@ -114,7 +114,7 @@ export const HomeScreen: React.FC = () => {
           {/* 2. Today's Schedule Card */}
           <ScheduleSummaryCard
             activities={scheduleActivities}
-            onViewFullDay={() => setIsFullDayModalVisible(true)}
+            onViewFullDay={() => setViewingSchedulePerson('me')}
             timeMarkers={
               activeTimelinePeriod?.timeMarkers || ['8:00AM', '1:00PM', '3:00 PM']
             }
@@ -144,7 +144,7 @@ export const HomeScreen: React.FC = () => {
           <FriendAvailabilitySection
             freeFriends={freeFriends}
             busyFriends={busyFriends}
-            onSelectFriend={(friend) => setViewingFriend(friend)}
+            onSelectFriend={(friend) => setViewingSchedulePerson(friend)}
             onViewAllFree={() => setShowAllFree(!showAllFree)}
             onViewAllBusy={() => setShowAllBusy(!showAllBusy)}
             showAllFree={showAllFree}
