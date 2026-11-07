@@ -17,6 +17,8 @@ import {
   BERNADETTE_SCHEDULE,
 } from '../mock/dashboardData';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
+import { WeeklyDateFilter } from '../components/dashboard/WeeklyDateFilter';
+import { ScheduleTypeFilter } from '../components/dashboard/ScheduleTypeFilter';
 
 interface FriendScheduleScreenProps {
   friend?: FriendAvailability | null;
@@ -116,43 +118,9 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
             <Text style={styles.dateSubHeading}>Today 2026</Text>
           </View>
 
-          {/* ================= 4. WEEKLY DAY PILLS SELECTOR ================= */}
-          <View style={styles.weekDaysRow}>
-            {WEEK_DAYS.map((item) => {
-              const isActive = item.date === selectedDate;
-              return (
-                <TouchableOpacity
-                  key={item.date}
-                  style={[
-                    styles.dayPill,
-                    isActive ? styles.dayPillActive : styles.dayPillInactive,
-                  ]}
-                  onPress={() => setSelectedDate(item.date)}
-                  activeOpacity={0.75}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: isActive }}
-                  accessibilityLabel={`${item.day} ${item.date}`}
-                >
-                  <Text
-                    style={[
-                      styles.dayLabel,
-                      isActive ? styles.dayLabelActive : styles.dayLabelInactive,
-                    ]}
-                  >
-                    {item.day}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dateNumber,
-                      isActive ? styles.dateNumberActive : styles.dateNumberInactive,
-                    ]}
-                  >
-                    {item.date}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* ================= 4. NEW FILTERS ================= */}
+          <WeeklyDateFilter />
+          <ScheduleTypeFilter />
 
           {/* ================= 5. GREEN BORDERED SCHEDULE BOARD ================= */}
           <View style={styles.scheduleBoardContainer}>
