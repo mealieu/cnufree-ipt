@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   sideDescription: {
     color: COLORS.white,
   },
-  // New styles for right-alignment
+
   alignRightContainer: {
     alignItems: 'flex-end',
   },
