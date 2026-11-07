@@ -17,9 +17,10 @@ export const CURRENT_USER: UserProfile = {
 export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
   {
     id: 'b-1',
-    title: 'Free Window',
+    title: 'Free',
     startTime: '8:00 AM',
     endTime: '9:00 AM',
+    timeRange: '8:00 AM - 9:00 AM',
     startHour: 8.0,
     endHour: 9.0,
     isBusy: false,
@@ -29,6 +30,7 @@ export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
     title: 'UI/UX',
     startTime: '9:00 AM',
     endTime: '10:30 AM',
+    timeRange: '9:00–10:30',
     startHour: 9.0,
     endHour: 10.5,
     room: 'AL211A',
@@ -36,9 +38,10 @@ export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
   },
   {
     id: 'b-3',
-    title: 'Free Window',
+    title: 'Free',
     startTime: '11:00 AM',
     endTime: '12:00 PM',
+    timeRange: '11:00 AM - 12:00 PM',
     startHour: 11.0,
     endHour: 12.0,
     isBusy: false,
@@ -48,6 +51,7 @@ export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
     title: 'IPT2',
     startTime: '12:00 PM',
     endTime: '1:30 PM',
+    timeRange: '12:00-1:30',
     startHour: 12.0,
     endHour: 13.5,
     room: 'P216',
@@ -58,6 +62,7 @@ export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
     title: 'THEN102',
     startTime: '1:30 PM',
     endTime: '3:00 PM',
+    timeRange: '1:30-3:00',
     startHour: 13.5,
     endHour: 15.0,
     room: 'RB412',
@@ -65,14 +70,304 @@ export const BERNADETTE_SCHEDULE: FriendScheduleItem[] = [
   },
   {
     id: 'b-6',
-    title: 'Free Window',
+    title: 'Free',
     startTime: '3:30 PM',
     endTime: '6:00 PM',
+    timeRange: '3:30 PM – 6:00 PM',
     startHour: 15.5,
     endHour: 18.0,
     isBusy: false,
   },
 ];
+
+/**
+ * Returns personal schedule items for a specific date of the week (19-25)
+ */
+export function getPersonalScheduleByDate(date: string): FriendScheduleItem[] {
+  switch (date) {
+    case '19': // Monday
+      return [
+        {
+          id: 'b-mon-1',
+          title: 'Free',
+          startTime: '8:00 AM',
+          endTime: '10:00 AM',
+          timeRange: '8:00 AM - 10:00 AM',
+          startHour: 8.0,
+          endHour: 10.0,
+          isBusy: false,
+        },
+        {
+          id: 'b-mon-2',
+          title: 'Web Systems & Technologies',
+          startTime: '10:00 AM',
+          endTime: '12:00 PM',
+          timeRange: '10:00-12:00',
+          room: 'AL214',
+          startHour: 10.0,
+          endHour: 12.0,
+          isBusy: true,
+        },
+        {
+          id: 'b-mon-3',
+          title: 'Free',
+          startTime: '12:00 PM',
+          endTime: '2:00 PM',
+          timeRange: '12:00 PM - 2:00 PM',
+          startHour: 12.0,
+          endHour: 14.0,
+          isBusy: false,
+        },
+        {
+          id: 'b-mon-4',
+          title: 'Database Systems Lab',
+          startTime: '2:00 PM',
+          endTime: '4:00 PM',
+          timeRange: '2:00-4:00',
+          room: 'P310',
+          startHour: 14.0,
+          endHour: 16.0,
+          isBusy: true,
+        },
+        {
+          id: 'b-mon-5',
+          title: 'Free',
+          startTime: '4:00 PM',
+          endTime: '6:00 PM',
+          timeRange: '4:00 PM - 6:00 PM',
+          startHour: 16.0,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    case '20': // Tuesday (Matches Figma Screenshot exactly)
+    default:
+      return BERNADETTE_SCHEDULE;
+    case '21': // Wednesday
+      return [
+        {
+          id: 'b-wed-1',
+          title: 'Free',
+          startTime: '8:00 AM',
+          endTime: '9:30 AM',
+          timeRange: '8:00 AM - 9:30 AM',
+          startHour: 8.0,
+          endHour: 9.5,
+          isBusy: false,
+        },
+        {
+          id: 'b-wed-2',
+          title: 'Software Engineering',
+          startTime: '9:30 AM',
+          endTime: '11:30 AM',
+          timeRange: '9:30-11:30',
+          room: 'AL302',
+          startHour: 9.5,
+          endHour: 11.5,
+          isBusy: true,
+        },
+        {
+          id: 'b-wed-3',
+          title: 'Free',
+          startTime: '11:30 AM',
+          endTime: '1:30 PM',
+          timeRange: '11:30 AM - 1:30 PM',
+          startHour: 11.5,
+          endHour: 13.5,
+          isBusy: false,
+        },
+        {
+          id: 'b-wed-4',
+          title: 'Network Security',
+          startTime: '1:30 PM',
+          endTime: '3:30 PM',
+          timeRange: '1:30-3:30',
+          room: 'RB205',
+          startHour: 13.5,
+          endHour: 15.5,
+          isBusy: true,
+        },
+        {
+          id: 'b-wed-5',
+          title: 'Free',
+          startTime: '3:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '3:30 PM - 6:00 PM',
+          startHour: 15.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    case '22': // Thursday
+      return [
+        {
+          id: 'b-thu-1',
+          title: 'Free',
+          startTime: '8:00 AM',
+          endTime: '9:00 AM',
+          timeRange: '8:00 AM - 9:00 AM',
+          startHour: 8.0,
+          endHour: 9.0,
+          isBusy: false,
+        },
+        {
+          id: 'b-thu-2',
+          title: 'UI/UX',
+          startTime: '9:00 AM',
+          endTime: '10:30 AM',
+          timeRange: '9:00–10:30',
+          startHour: 9.0,
+          endHour: 10.5,
+          room: 'AL211A',
+          isBusy: true,
+        },
+        {
+          id: 'b-thu-3',
+          title: 'Free',
+          startTime: '11:00 AM',
+          endTime: '12:00 PM',
+          timeRange: '11:00 AM - 12:00 PM',
+          startHour: 11.0,
+          endHour: 12.0,
+          isBusy: false,
+        },
+        {
+          id: 'b-thu-4',
+          title: 'IPT2',
+          startTime: '12:00 PM',
+          endTime: '1:30 PM',
+          timeRange: '12:00-1:30',
+          startHour: 12.0,
+          endHour: 13.5,
+          room: 'P216',
+          isBusy: true,
+        },
+        {
+          id: 'b-thu-5',
+          title: 'THEN102',
+          startTime: '1:30 PM',
+          endTime: '3:00 PM',
+          timeRange: '1:30-3:00',
+          startHour: 13.5,
+          endHour: 15.0,
+          room: 'RB412',
+          isBusy: true,
+        },
+        {
+          id: 'b-thu-6',
+          title: 'Free',
+          startTime: '3:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '3:30 PM – 6:00 PM',
+          startHour: 15.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    case '23': // Friday
+      return [
+        {
+          id: 'b-fri-1',
+          title: 'Free',
+          startTime: '8:00 AM',
+          endTime: '10:00 AM',
+          timeRange: '8:00 AM - 10:00 AM',
+          startHour: 8.0,
+          endHour: 10.0,
+          isBusy: false,
+        },
+        {
+          id: 'b-fri-2',
+          title: 'Capstone Project Seminar',
+          startTime: '10:00 AM',
+          endTime: '12:00 PM',
+          timeRange: '10:00-12:00',
+          room: 'Auditorium',
+          startHour: 10.0,
+          endHour: 12.0,
+          isBusy: true,
+        },
+        {
+          id: 'b-fri-3',
+          title: 'Free',
+          startTime: '12:00 PM',
+          endTime: '2:30 PM',
+          timeRange: '12:00 PM - 2:30 PM',
+          startHour: 12.0,
+          endHour: 14.5,
+          isBusy: false,
+        },
+        {
+          id: 'b-fri-4',
+          title: 'Professional Ethics in IT',
+          startTime: '2:30 PM',
+          endTime: '4:30 PM',
+          timeRange: '2:30-4:30',
+          room: 'P101',
+          startHour: 14.5,
+          endHour: 16.5,
+          isBusy: true,
+        },
+        {
+          id: 'b-fri-5',
+          title: 'Free',
+          startTime: '4:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '4:30 PM - 6:00 PM',
+          startHour: 16.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    case '24': // Saturday
+      return [
+        {
+          id: 'b-sat-1',
+          title: 'Free',
+          startTime: '8:00 AM',
+          endTime: '1:00 PM',
+          timeRange: '8:00 AM - 1:00 PM',
+          startHour: 8.0,
+          endHour: 13.0,
+          isBusy: false,
+        },
+        {
+          id: 'b-sat-2',
+          title: 'Project Group Study',
+          startTime: '1:00 PM',
+          endTime: '3:30 PM',
+          timeRange: '1:00-3:30',
+          room: 'Library 2F',
+          startHour: 13.0,
+          endHour: 15.5,
+          isBusy: true,
+        },
+        {
+          id: 'b-sat-3',
+          title: 'Free',
+          startTime: '3:30 PM',
+          endTime: '6:00 PM',
+          timeRange: '3:30 PM - 6:00 PM',
+          startHour: 15.5,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+    case '25': // Sunday
+      return [
+        {
+          id: 'b-sun-1',
+          title: 'Free',
+          startTime: '8:00 AM',
+          endTime: '6:00 PM',
+          timeRange: '8:00 AM - 6:00 PM',
+          startHour: 8.0,
+          endHour: 18.0,
+          isBusy: false,
+        },
+      ];
+  }
+}
 
 export const FRIEND_GROUPS: FriendGroupOption[] = [
   { id: 'all', label: 'All Friends' },
@@ -883,7 +1178,7 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
       },
       {
         id: 'msg-6',
-        title: 'Evening Free Window (Hangout)',
+        title: 'Evening Free (Hangout)',
         startTime: '7:30 PM',
         endTime: '9:00 PM',
         startHour: 19.5,
@@ -1023,7 +1318,7 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
       },
       {
         id: 'na-4',
-        title: 'Afternoon Free Window',
+        title: 'Afternoon Free',
         startTime: '3:30 PM',
         endTime: '5:30 PM',
         startHour: 15.5,
@@ -1046,7 +1341,7 @@ export const SAMPLE_FRIENDS: FriendAvailability[] = [
       },
       {
         id: 'na-6',
-        title: 'Evening Free Window',
+        title: 'Evening Free',
         startTime: '7:30 PM',
         endTime: '9:00 PM',
         startHour: 19.5,
@@ -1265,7 +1560,7 @@ export const TIMELINE_PERIODS: TimeSlotTimeline[] = [
     segments: [
       { label: '7am - 9am', isFree: true, durationRatio: 2.0, activityName: 'Early Morning Prep' },
       { label: '9am - 11am', isFree: false, durationRatio: 2.0, activityName: 'Lecture Hall 1' },
-      { label: '11am - 12pm', isFree: true, durationRatio: 1.0, activityName: 'Campus Free Window' },
+      { label: '11am - 12pm', isFree: true, durationRatio: 1.0, activityName: 'Campus Free' },
     ],
   },
   {
@@ -1303,14 +1598,14 @@ export function calculateMutualFreeWindows(
   const friendFree = friend.schedule
     ? friend.schedule.filter((s) => !s.isBusy)
     : (friend.freeSlots || []).map((fs, idx) => ({
-        id: `fs-${idx}`,
-        title: 'Free Window',
-        startTime: formatDecimalHourToTime(fs.startHour),
-        endTime: formatDecimalHourToTime(fs.endHour),
-        startHour: fs.startHour,
-        endHour: fs.endHour,
-        isBusy: false,
-      }));
+      id: `fs-${idx}`,
+      title: 'Free',
+      startTime: formatDecimalHourToTime(fs.startHour),
+      endTime: formatDecimalHourToTime(fs.endHour),
+      startHour: fs.startHour,
+      endHour: fs.endHour,
+      isBusy: false,
+    }));
 
   const overlaps: MutualFreeWindow[] = [];
 

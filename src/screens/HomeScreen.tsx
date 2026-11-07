@@ -36,6 +36,7 @@ import { FriendGroupId, FriendAvailability } from '../types/dashboard';
 
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
+import { PersonalScheduleScreen } from './PersonalScheduleScreen';
 
 export const HomeScreen: React.FC = () => {
 
@@ -94,11 +95,20 @@ export const HomeScreen: React.FC = () => {
     }, 600);
   }, []);
 
-  // If viewing dedicated individual schedule screen (HS-10)
+  // If viewing personal schedule (HS-05)
+  if (viewingSchedulePerson === 'me') {
+    return (
+      <PersonalScheduleScreen
+        onBack={() => setViewingSchedulePerson(null)}
+      />
+    );
+  }
+
+  // If viewing dedicated individual friend schedule screen (HS-10 / HS-12)
   if (viewingSchedulePerson) {
     return (
       <FriendScheduleScreen
-        friend={viewingSchedulePerson === 'me' ? null : viewingSchedulePerson}
+        friend={viewingSchedulePerson}
         onBack={() => setViewingSchedulePerson(null)}
       />
     );
