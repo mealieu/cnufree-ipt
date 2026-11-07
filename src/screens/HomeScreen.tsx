@@ -12,6 +12,7 @@ import { COLORS } from '../constants/colors';
 import { HeaderGreeting } from '../components/dashboard/HeaderGreeting';
 import { ScheduleSummaryCard } from '../components/dashboard/ScheduleSummaryCard';
 import { FriendGroupFilter } from '../components/dashboard/FriendGroupFilter';
+import { AvailabilityOverview } from '../components/dashboard/AvailabilityOverview';
 import { AvailabilityTimelineSlider } from '../components/dashboard/AvailabilityTimelineSlider';
 import { BestWindowCard } from '../components/dashboard/BestWindowCard';
 import { FriendAvailabilitySection } from '../components/dashboard/FriendAvailabilitySection';
@@ -130,7 +131,13 @@ export const HomeScreen: React.FC = () => {
             onSelectGroup={(groupId) => setSelectedGroup(groupId)}
           />
 
-          {/* 4. Friends' Availability Timeline Slider */}
+          {/* 4. Friends' Availability Overview */}
+          <AvailabilityOverview
+            friends={filteredFriends}
+            isLoading={refreshing}
+          />
+
+          {/* 5. Friends' Availability Timeline Slider */}
           <AvailabilityTimelineSlider
             onPeriodChange={(period) => setActiveTimelinePeriod(period)}
           />
