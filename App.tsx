@@ -9,6 +9,8 @@ import {
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
 import { COLORS } from './src/constants/colors';
 
 export default function App() {
@@ -31,7 +33,7 @@ export default function App() {
   return (
     <>
       <StatusBar style="dark" />
-      <HomeScreen />
+      <AuthScreen/>
     </>
   );
 }
