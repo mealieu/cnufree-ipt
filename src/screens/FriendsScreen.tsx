@@ -35,6 +35,8 @@ import { PendingRequestsSection } from '../components/friends/PendingRequestsSec
 import { FriendGroupsSection } from '../components/friends/FriendGroupsSection';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
+// TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
+import { ReceivedFriendRequestsScreen } from './ReceivedFriendRequestsScreen';
 
 export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   onNavigateTab,
@@ -61,6 +63,9 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   // Schedule Navigation State (when viewing a connected friend's schedule)
   const [selectedScheduleFriend, setSelectedScheduleFriend] =
     useState<FriendAvailability | null>(null);
+
+  // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
+  const [isViewingReceivedScreen, setIsViewingReceivedScreen] = useState<boolean>(false);
 
   // Mock Data Collections
   const [receivedRequests] = useState(INITIAL_RECEIVED_REQUESTS);
@@ -127,7 +132,8 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
       onOpenReceivedRequests();
       return;
     }
-    setActiveRequestPreview((prev) => (prev === 'received' ? null : 'received'));
+    // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
+    setIsViewingReceivedScreen(true);
   }, [onOpenReceivedRequests]);
 
   const handlePressSent = useCallback(() => {
@@ -172,6 +178,19 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
       <FriendScheduleScreen
         friend={selectedScheduleFriend}
         onBack={() => setSelectedScheduleFriend(null)}
+      />
+    );
+  }
+
+  // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
+  if (isViewingReceivedScreen) {
+    return (
+      <ReceivedFriendRequestsScreen
+        onBack={() => setIsViewingReceivedScreen(false)}
+        onNavigateTab={(tab) => {
+          setIsViewingReceivedScreen(false);
+          onNavigateTab?.(tab);
+        }}
       />
     );
   }
