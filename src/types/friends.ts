@@ -29,10 +29,17 @@ export interface FriendRequestItem {
   username: string;
   initials: string;
   avatarUrl?: string;
+  avatarBg?: string;
   mutualFriendsCount: number;
   direction: FriendRequestDirection;
   status: FriendRequestStatus;
   requestedAt?: string;
+  // Requester detail fields (FS-04)
+  department?: string; // e.g. "College of Computer Studies"
+  program?: string; // e.g. "BS Information Technology"
+  yearLevel?: string; // e.g. "2nd Year"
+  bioNote?: string; // e.g. "Hey! Let's compare schedules."
+  mutualFriendNames?: string[]; // e.g. ["Maria Deborah", "Kai Agod", "Aque Naman"]
 }
 
 /**
@@ -121,4 +128,17 @@ export interface FriendsScreenProps {
   onOpenSentRequests?: () => void;
   onOpenManageGroups?: (group?: FriendGroupItem) => void;
   onOpenCreateGroup?: () => void;
+}
+
+/**
+ * Props for the Received Friend Requests Screen (FS-04)
+ */
+export interface ReceivedFriendRequestsScreenProps {
+  requests?: FriendRequestItem[];
+  sentCount?: number;
+  onBack?: () => void;
+  onNavigateTab?: (tab: TabId) => void;
+  onAcceptRequest?: (requestId: string) => void;
+  onDeclineRequest?: (requestId: string) => void;
+  onSwitchToSent?: () => void;
 }

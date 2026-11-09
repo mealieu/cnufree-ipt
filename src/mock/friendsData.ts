@@ -119,6 +119,11 @@ export const INITIAL_RECEIVED_REQUESTS: FriendRequestItem[] = [
     direction: 'received',
     status: 'pending',
     requestedAt: '2h ago',
+    department: 'College of Arts & Sciences',
+    program: 'BA Communication',
+    yearLevel: '3rd Year',
+    bioNote: 'Hey! Fellow CNU student here. Looking to compare schedules for vacant periods!',
+    mutualFriendNames: ['Nhaka Kai P. Agod', 'Aque Naman M. Una', 'Maria Deborah'],
   },
   {
     id: 'req-rec-2',
@@ -129,6 +134,11 @@ export const INITIAL_RECEIVED_REQUESTS: FriendRequestItem[] = [
     direction: 'received',
     status: 'pending',
     requestedAt: '1d ago',
+    department: 'College of Computer Studies',
+    program: 'BS Information Technology',
+    yearLevel: '2nd Year',
+    bioNote: 'Classmate from IT212. Let me know when you have free hours on Tuesdays & Thursdays!',
+    mutualFriendNames: ['Nhaka Kai P. Agod', 'Carlos Mendoza', 'Mariah Deborah'],
   },
 ];
 

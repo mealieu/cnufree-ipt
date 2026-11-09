@@ -86,4 +86,15 @@ export const COLORS = {
   friendsMintBtnBorder: '#748C78',
   friendsGroupPillBg: '#5B6955',
   friendsGroupPillBorder: '#8DA488',
+
+  // Received Friend Requests (FS-04)
+  requestCardBg: '#FDFCF7',
+  requestCardBorder: '#DCE5D8',
+  requestCardShadow: 'rgba(26, 90, 49, 0.08)',
+  requestPillDarkBg: '#4B5C4D',
+  requestPillActiveMint: '#CFEAD6',
+  requestPillInactiveSage: '#C4D1C3',
+  requestDeclineBorder: '#96AA94',
+  requestDeclineBg: '#F7F8F4',
+  requestDeclineText: '#233829',
 };
