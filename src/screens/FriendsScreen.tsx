@@ -34,6 +34,7 @@ import { FriendsSearchBar } from '../components/friends/FriendsSearchBar';
 import { ConnectedFriendsSection } from '../components/friends/ConnectedFriendsSection';
 import { PendingRequestsSection } from '../components/friends/PendingRequestsSection';
 import { FriendGroupsSection } from '../components/friends/FriendGroupsSection';
+import { CreateFriendGroupModal } from '../components/friends/CreateFriendGroupModal';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
 // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
@@ -74,7 +75,10 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   const [receivedRequests, setReceivedRequests] =
     useState<FriendRequestItem[]>(INITIAL_RECEIVED_REQUESTS);
   const [sentRequests] = useState(INITIAL_SENT_REQUESTS);
-  const [friendGroups] = useState(INITIAL_FRIEND_GROUPS);
+  const [friendGroups, setFriendGroups] =
+    useState<FriendGroupItem[]>(INITIAL_FRIEND_GROUPS);
+  const [isCreateGroupModalVisible, setIsCreateGroupModalVisible] =
+    useState<boolean>(false);
 
   // Active source list of connected friends
   const baseConnectedFriends = useMemo(() => {
@@ -172,9 +176,40 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
       onOpenCreateGroup();
       return;
     }
-    setIsManagingGroups(true);
-    setFeedbackBanner('Create Friend Group selected. Showing all friend groups.');
+    setIsCreateGroupModalVisible(true);
   }, [onOpenCreateGroup]);
+
+  // Handler for group creation submission (FS-07)
+  const handleCreateGroup = useCallback(
+    (newGroup: { name: string; color?: string; memberIds: string[] }) => {
+      const newGroupItem: FriendGroupItem = {
+        id: `fg-${Date.now()}`,
+        name: newGroup.name,
+        memberIds: newGroup.memberIds,
+        memberCount: newGroup.memberIds.length,
+        isFeatured: true,
+      };
+
+      setFriendGroups((prev) => [newGroupItem, ...prev]);
+
+      if (newGroup.memberIds.length > 0) {
+        setConnectedFriends((prev) =>
+          prev.map((f) => {
+            if (newGroup.memberIds.includes(f.id)) {
+              return {
+                ...f,
+                groupIds: [...(f.groupIds || []), newGroupItem.id],
+              };
+            }
+            return f;
+          })
+        );
+      }
+
+      setFeedbackBanner(`Friend group "${newGroup.name}" created successfully!`);
+    },
+    []
+  );
 
   // Handlers for Acceptance and Decline state updates (FS-05)
   const handleAcceptFriendRequest = useCallback(
@@ -358,6 +393,15 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
           onNavigateTab?.(tab);
         }}
         notificationBadgeCount={0}
+      />
+
+      {/* 7. Create Friend Group Modal (FS-07) */}
+      <CreateFriendGroupModal
+        visible={isCreateGroupModalVisible}
+        onClose={() => setIsCreateGroupModalVisible(false)}
+        friends={connectedFriends}
+        existingGroups={friendGroups}
+        onCreateGroup={handleCreateGroup}
       />
     </SafeAreaView>
   );
