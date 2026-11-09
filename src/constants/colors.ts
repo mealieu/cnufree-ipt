@@ -73,4 +73,17 @@ export const COLORS = {
   timelineFreeBg: 'rgba(235, 243, 235, 0.45)',
   timelineBusyBg: '#D7DCE2',
   timelineBusyAccent: '#36424D',
-};
+
+  // Friends Main Screen (FS-01)
+  friendsSearchBg: '#5B6955',
+  friendsOliveText: '#5B6955',
+  friendsCountGreen: '#1E6B3E',
+  friendsAvatarBg: '#FFFFFF',
+  friendsAvatarBorder: '#7A917A',
+  friendsScheduleBtnBg: '#A4BFA8',
+  friendsScheduleBtnBorder: '#7C9882',
+  friendsMintBtnBg: '#CFEAD6',
+  friendsMintBtnBorder: '#748C78',
+  friendsGroupPillBg: '#5B6955',
+  friendsGroupPillBorder: '#8DA488',
+};

@@ -37,10 +37,13 @@ import { FriendGroupId, FriendAvailability } from '../types/dashboard';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
 import { PersonalScheduleScreen } from './PersonalScheduleScreen';
+import { FriendsScreen } from './FriendsScreen';
+import { TabId } from '../types/navigation';
 
 export const HomeScreen: React.FC = () => {
 
   // State
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [selectedGroup, setSelectedGroup] = useState<FriendGroupId>('all');
   const [scheduleActivities] = useState(INITIAL_SCHEDULE_ACTIVITIES);
   const [isEmptyDemoActive, setIsEmptyDemoActive] = useState(false);
@@ -94,6 +97,15 @@ export const HomeScreen: React.FC = () => {
       setRefreshing(false);
     }, 600);
   }, []);
+
+  // If viewing Friends main screen (FS-01)
+  if (activeTab === 'friends') {
+    return (
+      <FriendsScreen
+        onNavigateTab={(tab) => setActiveTab(tab)}
+      />
+    );
+  }
 
   // If viewing personal schedule (HS-05)
   if (viewingSchedulePerson === 'me') {
@@ -216,11 +228,9 @@ export const HomeScreen: React.FC = () => {
 
       {/* Bottom Navigation Bar from Figma Screenshot */}
       <BottomNavBar
-        activeTab="home"
+        activeTab={activeTab}
         onTabChange={(tab) => {
-          if (tab === 'friends') {
-            setViewingSchedulePerson(SAMPLE_FRIEND_MARIA_DEBORAH);
-          }
+          setActiveTab(tab);
         }}
         notificationBadgeCount={0}
       />
