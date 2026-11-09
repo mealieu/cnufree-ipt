@@ -86,4 +86,8 @@ export const COLORS = {
   friendsMintBtnBorder: '#748C78',
   friendsGroupPillBg: '#5B6955',
   friendsGroupPillBorder: '#8DA488',
+  friendsPendingBtnBg: '#586A55',
+  friendsPendingBtnBorder: '#485846',
+  friendsFeedbackBannerBg: '#CCD4CE',
+  friendsFeedbackBannerBorder: '#4D5E51',
 };

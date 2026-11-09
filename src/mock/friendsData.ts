@@ -276,6 +276,16 @@ export const INITIAL_SENT_REQUESTS: FriendRequestItem[] = [
     status: 'pending',
     requestedAt: '1w ago',
   },
+  {
+    id: 'req-sent-15',
+    name: 'Althea Santos',
+    username: '@althea_s',
+    initials: 'AS',
+    mutualFriendsCount: 2,
+    direction: 'sent',
+    status: 'pending',
+    requestedAt: '1w ago',
+  },
 ];
 
 /**
@@ -307,18 +317,18 @@ export const INITIAL_FRIEND_GROUPS: FriendGroupItem[] = [
 
 /**
  * Discoverable users for Find Friends search (shared context for FS-02 / FS-03)
- * Exactly reproduces Figma mockup UI - 15 where searching "Mariah" returns:
- * 1. Mariah Carey (@MariahCar, 3 mutual friends)
- * 2. Ma. Mariah Sia (@Siam, No mutual friends)
+ * Exactly reproduces Figma mockup UI - 16 where searching "Mariah" returns:
+ * 1. Mariah Deborah (@MariahDeborah, 3 mutual friends) [Pending]
+ * 2. Ma. Mariah Sia (@Siam, No mutual friends) [+ Add friend]
  */
 export const DISCOVERABLE_USERS: DiscoverableUser[] = [
   {
-    id: 'du-1',
-    name: 'Mariah Carey',
-    username: '@MariahCar',
-    initials: 'MC',
+    id: 'du-2',
+    name: 'Mariah Deborah',
+    username: '@MariahDeborah',
+    initials: 'MD',
     mutualFriendsCount: 3,
-    connectionStatus: 'none',
+    connectionStatus: 'pending_sent',
   },
   {
     id: 'du-3',
@@ -475,4 +485,11 @@ export function cancelFriendRequest(user: DiscoverableUser): void {
   if (existingIndex >= 0) {
     INITIAL_SENT_REQUESTS.splice(existingIndex, 1);
   }
+}
+
+/**
+ * Returns the current count of pending sent requests (FS-03)
+ */
+export function getSentRequestsCount(): number {
+  return INITIAL_SENT_REQUESTS.length;
 }

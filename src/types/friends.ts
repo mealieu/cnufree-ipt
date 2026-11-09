@@ -125,22 +125,32 @@ export interface FriendsScreenProps {
 }
 
 /**
- * Props for the Friend Search Screen (FS-02)
+ * Props for the Friend Search & Request Screen (FS-02, FS-03)
  */
 export interface FriendSearchScreenProps {
   onBack?: () => void;
   onNavigateTab?: (tab: TabId) => void;
   initialQuery?: string;
   onAddFriend?: (user: DiscoverableUser) => void;
+  onViewSentRequests?: () => void;
+  initialPendingUser?: DiscoverableUser | null;
 }
 
 /**
- * Props for individual matching user item in search results (FS-02)
+ * Submission feedback state for sent friend request (FS-03)
+ */
+export interface FriendRequestSubmissionFeedback {
+  targetUser: DiscoverableUser;
+  message: string;
+}
+
+/**
+ * Props for individual matching user item in search results (FS-02, FS-03)
  */
 export interface FriendSearchResultItemProps {
   user: DiscoverableUser;
   onAddFriend: (user: DiscoverableUser) => void;
-  isAdded?: boolean;
+  isPending?: boolean;
 }
 
 /**

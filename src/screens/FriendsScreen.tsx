@@ -180,7 +180,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
     );
   }
 
-  // If searching for friends to add (FS-02)
+  // If searching for friends to add (FS-02 / FS-03)
   if (isFindFriendsOpen) {
     return (
       <FriendSearchScreen
@@ -190,6 +190,14 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
           setSearchQuery('');
         }}
         onNavigateTab={onNavigateTab}
+        onViewSentRequests={() => {
+          setIsFindFriendsOpen(false);
+          if (onOpenSentRequests) {
+            onOpenSentRequests();
+          } else {
+            setActiveRequestPreview('sent');
+          }
+        }}
       />
     );
   }
