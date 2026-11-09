@@ -384,6 +384,9 @@ export const INITIAL_FRIEND_GROUPS: FriendGroupItem[] = [
 
 /**
  * Discoverable users for Find Friends search (shared context for FS-02 / FS-03)
+ * Exactly reproduces Figma mockup UI - 15 where searching "Mariah" returns:
+ * 1. Mariah Carey (@MariahCar, 3 mutual friends)
+ * 2. Ma. Mariah Sia (@Siam, No mutual friends)
  */
 export const DISCOVERABLE_USERS: DiscoverableUser[] = [
   {
@@ -395,14 +398,6 @@ export const DISCOVERABLE_USERS: DiscoverableUser[] = [
     connectionStatus: 'none',
   },
   {
-    id: 'du-2',
-    name: 'Mariah Deborah',
-    username: '@MariahDeborah',
-    initials: 'MD',
-    mutualFriendsCount: 3,
-    connectionStatus: 'none',
-  },
-  {
     id: 'du-3',
     name: 'Ma. Mariah Sia',
     username: '@Siam',
@@ -410,7 +405,75 @@ export const DISCOVERABLE_USERS: DiscoverableUser[] = [
     mutualFriendsCount: 0,
     connectionStatus: 'none',
   },
+  {
+    id: 'du-4',
+    name: 'Carlos Mendoza',
+    username: '@carlos_m',
+    initials: 'CM',
+    mutualFriendsCount: 2,
+    connectionStatus: 'none',
+  },
+  {
+    id: 'du-5',
+    name: 'Patricia Villanueva',
+    username: '@pat_villa',
+    initials: 'PV',
+    mutualFriendsCount: 4,
+    connectionStatus: 'none',
+  },
+  {
+    id: 'du-6',
+    name: 'Gabriel Santos',
+    username: '@gab_santos',
+    initials: 'GS',
+    mutualFriendsCount: 1,
+    connectionStatus: 'none',
+  },
+  {
+    id: 'du-7',
+    name: 'Bianca Gonzalez',
+    username: '@biancag',
+    initials: 'BG',
+    mutualFriendsCount: 0,
+    connectionStatus: 'none',
+  },
 ];
+
+/**
+ * Formats mutual friends count according to UI - 15 specification:
+ * - 0 -> "No mutual friends"
+ * - 1 -> "1 mutual friend"
+ * - N -> "N mutual friends"
+ */
+export function formatMutualFriends(count: number): string {
+  if (!count || count <= 0) {
+    return 'No mutual friends';
+  }
+  if (count === 1) {
+    return '1 mutual friend';
+  }
+  return `${count} mutual friends`;
+}
+
+/**
+ * Searches discoverable users by name or username (case-insensitive) (FS-02)
+ */
+export function searchDiscoverableUsers(
+  users: DiscoverableUser[],
+  query: string
+): DiscoverableUser[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return users;
+  }
+  return users.filter((user) => {
+    const matchesName = user.name.toLowerCase().includes(normalized);
+    const matchesUsername = user.username.toLowerCase().includes(normalized);
+    const cleanUsername = user.username.replace(/^@/, '').toLowerCase();
+    const matchesCleanUsername = cleanUsername.includes(normalized);
+    return matchesName || matchesUsername || matchesCleanUsername;
+  });
+}
 
 /**
  * Filters connected friends by search query (matches name or @username) and optional groupId
@@ -452,4 +515,41 @@ export function filterFriendGroups(
   return groups.filter((group) =>
     group.name.toLowerCase().includes(normalizedQuery)
   );
+}
+
+/**
+ * Sends a friend request to a discoverable user (FS-02 / FS-03)
+ */
+export function sendFriendRequest(user: DiscoverableUser): FriendRequestItem {
+  const existingIndex = INITIAL_SENT_REQUESTS.findIndex(
+    (r) => r.username.toLowerCase() === user.username.toLowerCase()
+  );
+  if (existingIndex >= 0) {
+    return INITIAL_SENT_REQUESTS[existingIndex];
+  }
+
+  const newRequest: FriendRequestItem = {
+    id: `req-sent-${Date.now()}`,
+    name: user.name,
+    username: user.username,
+    initials: user.initials,
+    mutualFriendsCount: user.mutualFriendsCount,
+    direction: 'sent',
+    status: 'pending',
+    requestedAt: 'Just now',
+  };
+  INITIAL_SENT_REQUESTS.unshift(newRequest);
+  return newRequest;
+}
+
+/**
+ * Cancels a pending friend request sent to a discoverable user
+ */
+export function cancelFriendRequest(user: DiscoverableUser): void {
+  const existingIndex = INITIAL_SENT_REQUESTS.findIndex(
+    (r) => r.username.toLowerCase() === user.username.toLowerCase()
+  );
+  if (existingIndex >= 0) {
+    INITIAL_SENT_REQUESTS.splice(existingIndex, 1);
+  }
 }
