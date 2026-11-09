@@ -131,14 +131,29 @@ export interface FriendsScreenProps {
 }
 
 /**
- * Props for the Received Friend Requests Screen (FS-04)
+ * Props for the Received Friend Requests Screen (FS-04 / FS-05)
  */
 export interface ReceivedFriendRequestsScreenProps {
   requests?: FriendRequestItem[];
   sentCount?: number;
+  connectedFriends?: ConnectedFriend[];
   onBack?: () => void;
   onNavigateTab?: (tab: TabId) => void;
-  onAcceptRequest?: (requestId: string) => void;
+  onAcceptRequest?: (requestId: string, newConnectedFriend?: ConnectedFriend) => void;
   onDeclineRequest?: (requestId: string) => void;
+  onUndoRequest?: (requestId: string) => void;
   onSwitchToSent?: () => void;
+  onViewFriendSchedule?: (friend: FriendAvailability) => void;
+}
+
+/**
+ * Props for the Friend Request Confirmation Modal (FS-05)
+ */
+export interface FriendRequestConfirmModalProps {
+  visible: boolean;
+  type: 'accept' | 'decline';
+  request: FriendRequestItem | null;
+  isSubmitting?: boolean;
+  onConfirm: (request: FriendRequestItem) => void;
+  onCancel: () => void;
 }

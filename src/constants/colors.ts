@@ -97,4 +97,15 @@ export const COLORS = {
   requestDeclineBorder: '#96AA94',
   requestDeclineBg: '#F7F8F4',
   requestDeclineText: '#233829',
+
+  // Friend Request Confirmation Modal (FS-05)
+  confirmModalSageBg: '#829A81',
+  confirmModalBorder: '#637D62',
+  confirmModalTextDark: '#121F14',
+  confirmModalSubText: '#233527',
+  confirmModalAvatarBg: '#FFFFFF',
+  confirmModalAvatarBorder: '#475C48',
+  confirmModalBtnDark: '#344636',
+  confirmModalBtnLight: '#FFFFFF',
+  confirmModalBtnLightText: '#253527',
 };
