@@ -86,7 +86,6 @@ export const COLORS = {
   friendsMintBtnBorder: '#748C78',
   friendsGroupPillBg: '#5B6955',
   friendsGroupPillBorder: '#8DA488',
-
   // Received Friend Requests (FS-04)
   requestCardBg: '#FDFCF7',
   requestCardBorder: '#DCE5D8',
@@ -108,4 +107,10 @@ export const COLORS = {
   confirmModalBtnDark: '#344636',
   confirmModalBtnLight: '#FFFFFF',
   confirmModalBtnLightText: '#253527',
+
+  // Friend Search & Pending Interaction (FS-03)
+  friendsPendingBtnBg: '#586A55',
+  friendsPendingBtnBorder: '#485846',
+  friendsFeedbackBannerBg: '#CCD4CE',
+  friendsFeedbackBannerBorder: '#4D5E51',
 };

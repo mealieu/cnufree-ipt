@@ -24,64 +24,88 @@ import {
   formatMutualFriends,
   sendFriendRequest,
   cancelFriendRequest,
+  getSentRequestsCount,
 } from '../mock/friendsData';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 
 /**
- * FS-02: Friend Search Screen
- * Designs the friend search screen with matching users, Add Friend actions,
- * and no-results states according to Figma Mockup UI - 15.
+ * FS-02 & FS-03: Friend Search & Request Screen
+ * - FS-02: Matching users, Add Friend actions, and no-results states (UI - 15)
+ * - FS-03: Send friend request interaction with pending status and submission feedback (UI - 16)
  */
 export const FriendSearchScreen: React.FC<FriendSearchScreenProps> = ({
   onBack,
   onNavigateTab,
   initialQuery = 'Mariah',
   onAddFriend,
+  onViewSentRequests,
+  initialPendingUser,
 }) => {
-  // Search Query State (defaults to 'Mariah' to match Figma UI - 15)
+  // Search Query State (defaults to 'Mariah' to match Figma UI - 15 / UI - 16)
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
 
-  // Set of user IDs for which a friend request has been triggered
-  const [addedUserIds, setAddedUserIds] = useState<Set<string>>(new Set());
+  // Set of user IDs with pending friend request status
+  const [pendingUserIds, setPendingUserIds] = useState<Set<string>>(() => {
+    const initialSet = new Set<string>();
+    DISCOVERABLE_USERS.forEach((u) => {
+      if (u.connectionStatus === 'pending_sent') {
+        initialSet.add(u.id);
+      }
+    });
+    return initialSet;
+  });
 
-  // Transient feedback banner
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  // Target user for the submission feedback banner (UI - 16)
+  const [feedbackUser, setFeedbackUser] = useState<DiscoverableUser | null>(() => {
+    if (initialPendingUser) {
+      return initialPendingUser;
+    }
+    return DISCOVERABLE_USERS.find((u) => u.connectionStatus === 'pending_sent') || null;
+  });
 
-  // Filtered matching discoverable users
+  // Dynamic count of sent requests for the bottom action button (matches 'View sent requests (15)' in UI - 16)
+  const [sentRequestsCount, setSentRequestsCount] = useState<number>(() => {
+    return getSentRequestsCount();
+  });
+
+  // Transient status alert message
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Filtered matching discoverable users based on current search query
   const matchingUsers = useMemo(() => {
     return searchDiscoverableUsers(DISCOVERABLE_USERS, searchQuery);
   }, [searchQuery]);
 
-  // Handler for Add Friend action button (FS-02)
+  // Handler for Add Friend action button (FS-03 Send Request Interaction)
   const handleAddFriend = useCallback(
     (user: DiscoverableUser) => {
-      const isCurrentlyAdded = addedUserIds.has(user.id);
-
-      // Toggle or set added state
-      setAddedUserIds((prev) => {
+      // 1. Add user ID to pending set
+      setPendingUserIds((prev) => {
         const next = new Set(prev);
-        if (isCurrentlyAdded) {
-          next.delete(user.id);
-        } else {
-          next.add(user.id);
-        }
+        next.add(user.id);
         return next;
       });
 
-      // Show feedback banner and record request in mock store
-      if (!isCurrentlyAdded) {
-        sendFriendRequest(user);
-        setFeedbackMessage(`Friend request sent to ${user.name}!`);
-      } else {
-        cancelFriendRequest(user);
-        setFeedbackMessage(`Cancelled request for ${user.name}.`);
-      }
+      // 2. Set submission feedback banner target
+      setFeedbackUser(user);
+      setStatusMessage(null);
 
-      // External callback if passed
+      // 3. Dispatch to mock store and update sent requests count
+      sendFriendRequest(user);
+      setSentRequestsCount(getSentRequestsCount());
+
+      // 4. Trigger external callback if passed
       onAddFriend?.(user);
     },
-    [addedUserIds, onAddFriend]
+    [onAddFriend]
   );
+
+  // Handler when clicking an already Pending button
+  const handlePressPending = useCallback((user: DiscoverableUser) => {
+    setStatusMessage(
+      `Pending request sent to ${user.name}. Waiting for their response.`
+    );
+  }, []);
 
   // Handler for clearing search query
   const handleClearSearch = useCallback(() => {
@@ -141,17 +165,17 @@ export const FriendSearchScreen: React.FC<FriendSearchScreenProps> = ({
           {/* Sub-Header Divider Line */}
           <View style={styles.horizontalDivider} />
 
-          {/* Feedback banner if an action was triggered */}
-          {feedbackMessage && (
+          {/* Status Tooltip Message if tapped */}
+          {statusMessage && (
             <TouchableOpacity
-              style={styles.feedbackBanner}
+              style={styles.statusToast}
               activeOpacity={0.8}
-              onPress={() => setFeedbackMessage(null)}
+              onPress={() => setStatusMessage(null)}
               accessibilityRole="button"
-              accessibilityLabel="Dismiss message"
+              accessibilityLabel="Dismiss status message"
             >
-              <Text style={styles.feedbackBannerText}>{feedbackMessage}</Text>
-              <Text style={styles.feedbackDismissText}>Dismiss</Text>
+              <Text style={styles.statusToastText}>{statusMessage}</Text>
+              <Text style={styles.statusToastDismiss}>Dismiss</Text>
             </TouchableOpacity>
           )}
 
@@ -187,8 +211,8 @@ export const FriendSearchScreen: React.FC<FriendSearchScreenProps> = ({
                 value={searchQuery}
                 onChangeText={(text) => {
                   setSearchQuery(text);
-                  if (feedbackMessage) {
-                    setFeedbackMessage(null);
+                  if (statusMessage) {
+                    setStatusMessage(null);
                   }
                 }}
                 placeholder="Search by name or username"
@@ -228,15 +252,28 @@ export const FriendSearchScreen: React.FC<FriendSearchScreenProps> = ({
             <Text style={styles.resultsCountText}>{matchingUsers.length}</Text>
           </View>
 
-          {/* ================= 5. MATCHING USERS LIST OR NO-RESULTS STATE ================= */}
+          {/* ================= 5. SUBMISSION FEEDBACK BANNER (FS-03, UI - 16) ================= */}
+          {feedbackUser && (
+            <View
+              style={styles.submissionFeedbackBanner}
+              accessibilityRole="alert"
+              accessibilityLabel={`Friend request sent to ${feedbackUser.name}. They'll appear in Friends after accepting`}
+            >
+              <Text style={styles.submissionFeedbackText}>
+                {`Friend request sent to ${feedbackUser.name}. They'll appear in Friends after accepting`}
+              </Text>
+            </View>
+          )}
+
+          {/* ================= 6. MATCHING USERS LIST OR NO-RESULTS STATE ================= */}
           {matchingUsers.length > 0 ? (
             <View style={styles.userListContainer}>
               {matchingUsers.map((user) => {
-                const isAdded = addedUserIds.has(user.id);
+                const isPending = pendingUserIds.has(user.id);
 
                 return (
                   <View key={user.id} style={styles.userRow}>
-                    {/* Circular Avatar (White with green border, matching UI - 15) */}
+                    {/* Circular Avatar (White with green border, matching UI - 15 / UI - 16) */}
                     <View style={styles.avatarCircle} />
 
                     {/* User Information */}
@@ -252,36 +289,34 @@ export const FriendSearchScreen: React.FC<FriendSearchScreenProps> = ({
                       </Text>
                     </View>
 
-                    {/* "+ Add friend" Action Button */}
-                    <TouchableOpacity
-                      style={[
-                        styles.addFriendButton,
-                        isAdded && styles.addFriendButtonActive,
-                      ]}
-                      onPress={() => handleAddFriend(user)}
-                      activeOpacity={0.75}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        isAdded
-                          ? `Requested connection with ${user.name}`
-                          : `Add friend ${user.name}`
-                      }
-                    >
-                      <Text
-                        style={[
-                          styles.addFriendButtonText,
-                          isAdded && styles.addFriendButtonTextActive,
-                        ]}
+                    {/* Action Button: Pending Status (FS-03) or + Add friend (FS-02) */}
+                    {isPending ? (
+                      <TouchableOpacity
+                        style={styles.pendingButton}
+                        onPress={() => handlePressPending(user)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Friend request pending for ${user.name}`}
                       >
-                        {isAdded ? 'Requested' : '+ Add friend'}
-                      </Text>
-                    </TouchableOpacity>
+                        <Text style={styles.pendingButtonText}>Pending</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addFriendButton}
+                        onPress={() => handleAddFriend(user)}
+                        activeOpacity={0.75}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add friend ${user.name}`}
+                      >
+                        <Text style={styles.addFriendButtonText}>+ Add friend</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 );
               })}
             </View>
           ) : (
-            /* ================= 6. NO-RESULTS STATE (FS-02) ================= */
+            /* ================= 7. NO-RESULTS STATE (FS-02) ================= */
             <View style={styles.noResultsCard}>
               <View style={styles.noResultsIconContainer}>
                 <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
@@ -328,17 +363,44 @@ export const FriendSearchScreen: React.FC<FriendSearchScreenProps> = ({
             </View>
           )}
 
-          {/* ================= 7. FOOTER HELPER NOTE & DIVIDER ================= */}
+          {/* ================= 8. FOOTER: PENDING HELPER NOTE & VIEW SENT REQUESTS (FS-03, UI - 16) ================= */}
           <View style={styles.footerNoteSection}>
             <View style={styles.footerDivider} />
-            <Text style={styles.footerNoteText}>
-              Send a request to connect and share availability
-            </Text>
+
+            {pendingUserIds.size > 0 ? (
+              <View style={styles.pendingFooterContainer}>
+                <Text style={styles.pendingHelperText}>
+                  Pending means you’re waiting for their response
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.viewSentRequestsButton}
+                  onPress={() => {
+                    if (onViewSentRequests) {
+                      onViewSentRequests();
+                    } else if (onBack) {
+                      onBack();
+                    }
+                  }}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View sent requests (${sentRequestsCount})`}
+                >
+                  <Text style={styles.viewSentRequestsButtonText}>
+                    {`View sent requests (${sentRequestsCount})`}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={styles.footerNoteText}>
+                Send a request to connect and share availability
+              </Text>
+            )}
           </View>
         </View>
       </ScrollView>
 
-      {/* ================= 8. BOTTOM NAVIGATION BAR ================= */}
+      {/* ================= 9. BOTTOM NAVIGATION BAR ================= */}
       <BottomNavBar
         activeTab="friends"
         onTabChange={(tab) => {
@@ -429,8 +491,8 @@ const styles = StyleSheet.create({
     color: '#1E2B20',
   },
 
-  /* Feedback Banner */
-  feedbackBanner: {
+  /* Transient Status Toast */
+  statusToast: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -442,14 +504,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 16,
   },
-  feedbackBannerText: {
+  statusToastText: {
     flex: 1,
     fontFamily: FONTS.medium,
-    fontSize: 13.5,
+    fontSize: 13,
     color: '#122E1A',
     marginRight: 8,
   },
-  feedbackDismissText: {
+  statusToastDismiss: {
     fontFamily: FONTS.bold,
     fontSize: 12.5,
     color: COLORS.darkGreen,
@@ -492,7 +554,7 @@ const styles = StyleSheet.create({
   resultsHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 26,
+    marginBottom: 16,
   },
   resultsSectionTitle: {
     fontFamily: FONTS.bold,
@@ -514,7 +576,24 @@ const styles = StyleSheet.create({
     color: COLORS.friendsOliveText,
   },
 
-  /* 5. Matching Users List */
+  /* 5. Submission Feedback Banner (FS-03, UI - 16) */
+  submissionFeedbackBanner: {
+    backgroundColor: COLORS.friendsFeedbackBannerBg,
+    borderWidth: 1,
+    borderColor: COLORS.friendsFeedbackBannerBorder,
+    borderRadius: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 20,
+  },
+  submissionFeedbackText: {
+    fontFamily: FONTS.regular,
+    fontSize: 13.5,
+    color: '#121F16',
+    lineHeight: 18,
+  },
+
+  /* 6. Matching Users List */
   userListContainer: {
     gap: 22,
     marginBottom: 28,
@@ -556,30 +635,44 @@ const styles = StyleSheet.create({
     color: '#2A3C2E',
     marginTop: 2,
   },
+
+  /* Pending Status Button (FS-03, UI - 16) */
+  pendingButton: {
+    backgroundColor: COLORS.friendsPendingBtnBg,
+    borderWidth: 1,
+    borderColor: COLORS.friendsPendingBtnBorder,
+    borderRadius: 2,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    minWidth: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingButtonText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+    color: '#0E1B12',
+  },
+
+  /* + Add Friend Button (FS-02) */
   addFriendButton: {
     backgroundColor: COLORS.friendsMintBtnBg,
     borderWidth: 1.2,
     borderColor: COLORS.friendsMintBtnBorder,
-    borderRadius: 3,
+    borderRadius: 2,
     paddingVertical: 7,
     paddingHorizontal: 12,
+    minWidth: 96,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  addFriendButtonActive: {
-    backgroundColor: '#B5D3BE',
-    borderColor: '#547B5E',
   },
   addFriendButtonText: {
     fontFamily: FONTS.bold,
     fontSize: 13.5,
     color: '#102A18',
   },
-  addFriendButtonTextActive: {
-    color: '#0A2011',
-  },
 
-  /* 6. No-Results State */
+  /* 7. No-Results State */
   noResultsCard: {
     backgroundColor: 'rgba(91, 105, 85, 0.08)',
     borderRadius: 12,
@@ -627,7 +720,7 @@ const styles = StyleSheet.create({
     color: '#102A18',
   },
 
-  /* 7. Footer Helper Note */
+  /* 8. Footer Section */
   footerNoteSection: {
     marginTop: 6,
     marginBottom: 20,
@@ -636,7 +729,34 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(91, 105, 85, 0.35)',
     width: '100%',
-    marginBottom: 14,
+    marginBottom: 16,
+  },
+  pendingFooterContainer: {
+    alignItems: 'center',
+    gap: 14,
+  },
+  pendingHelperText: {
+    fontFamily: FONTS.regular,
+    fontSize: 13.5,
+    color: '#1B2C1E',
+    textAlign: 'center',
+  },
+  viewSentRequestsButton: {
+    backgroundColor: COLORS.friendsMintBtnBg,
+    borderWidth: 1.2,
+    borderColor: COLORS.friendsMintBtnBorder,
+    borderRadius: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    alignSelf: 'center',
+    minWidth: 240,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewSentRequestsButtonText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+    color: '#0E2515',
   },
   footerNoteText: {
     fontFamily: FONTS.regular,
