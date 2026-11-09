@@ -68,6 +68,7 @@ export interface FriendsSearchBarProps {
   onClear?: () => void;
   onPressAddButton?: () => void;
   placeholder?: string;
+  onFocus?: () => void;
 }
 
 /**
@@ -122,3 +123,31 @@ export interface FriendsScreenProps {
   onOpenManageGroups?: (group?: FriendGroupItem) => void;
   onOpenCreateGroup?: () => void;
 }
+
+/**
+ * Props for the Friend Search Screen (FS-02)
+ */
+export interface FriendSearchScreenProps {
+  onBack?: () => void;
+  onNavigateTab?: (tab: TabId) => void;
+  initialQuery?: string;
+  onAddFriend?: (user: DiscoverableUser) => void;
+}
+
+/**
+ * Props for individual matching user item in search results (FS-02)
+ */
+export interface FriendSearchResultItemProps {
+  user: DiscoverableUser;
+  onAddFriend: (user: DiscoverableUser) => void;
+  isAdded?: boolean;
+}
+
+/**
+ * Props for the No Results state in friend search (FS-02)
+ */
+export interface FriendSearchNoResultsProps {
+  query: string;
+  onClearQuery: () => void;
+}
+

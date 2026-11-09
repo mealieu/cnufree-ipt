@@ -15,7 +15,8 @@ export const FriendsSearchBar: React.FC<FriendsSearchBarProps> = ({
   onChangeText,
   onClear,
   onPressAddButton,
-  placeholder = 'Search friends or groups...',
+  placeholder = 'Search by name or username...',
+  onFocus,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -25,15 +26,18 @@ export const FriendsSearchBar: React.FC<FriendsSearchBarProps> = ({
       <View
         style={styles.searchContainer}
         accessibilityRole="search"
-        accessibilityLabel="Search friends or groups"
+        accessibilityLabel="Search by name or username"
       >
         <TextInput
           style={styles.searchInput}
           value={value}
           onChangeText={onChangeText}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
           onBlur={() => setIsFocused(false)}
-          placeholder={isFocused ? placeholder : ''}
+          placeholder={placeholder}
           placeholderTextColor="rgba(244, 241, 216, 0.65)"
           selectionColor={COLORS.cream}
           returnKeyType="search"

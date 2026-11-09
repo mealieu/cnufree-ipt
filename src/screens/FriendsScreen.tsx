@@ -35,6 +35,7 @@ import { PendingRequestsSection } from '../components/friends/PendingRequestsSec
 import { FriendGroupsSection } from '../components/friends/FriendGroupsSection';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
+import { FriendSearchScreen } from './FriendSearchScreen';
 
 export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   onNavigateTab,
@@ -61,6 +62,9 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   // Schedule Navigation State (when viewing a connected friend's schedule)
   const [selectedScheduleFriend, setSelectedScheduleFriend] =
     useState<FriendAvailability | null>(null);
+
+  // Friend Search Navigation State (FS-02)
+  const [isFindFriendsOpen, setIsFindFriendsOpen] = useState<boolean>(false);
 
   // Mock Data Collections
   const [receivedRequests] = useState(INITIAL_RECEIVED_REQUESTS);
@@ -100,7 +104,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
       onOpenFindFriends();
       return;
     }
-    setFeedbackBanner('Tap the search bar to filter friends or find people to connect with.');
+    setIsFindFriendsOpen(true);
   }, [onOpenFindFriends]);
 
   const handleToggleViewAllFriends = useCallback(() => {
@@ -176,6 +180,20 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
     );
   }
 
+  // If searching for friends to add (FS-02)
+  if (isFindFriendsOpen) {
+    return (
+      <FriendSearchScreen
+        initialQuery={searchQuery || 'Mariah'}
+        onBack={() => {
+          setIsFindFriendsOpen(false);
+          setSearchQuery('');
+        }}
+        onNavigateTab={onNavigateTab}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -213,17 +231,38 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
             </TouchableOpacity>
           )}
 
-          {/* 2. Functional Search Bar & Add Friend Action Button */}
+          {/* 2. Functional Search Bar & Add Friend Action Button (FS-01 / FS-02) */}
           <FriendsSearchBar
             value={searchQuery}
             onChangeText={(text) => {
               setSearchQuery(text);
-              if (feedbackBanner) {
-                setFeedbackBanner(null);
+              if (text.trim().length > 0) {
+                setIsFindFriendsOpen(true);
               }
             }}
+            onFocus={() => {
+              setIsFindFriendsOpen(true);
+            }}
             onPressAddButton={handlePressAddFriend}
+            placeholder="Search by name or username..."
           />
+
+          {/* Find Friends Shortcut / Banner */}
+          <TouchableOpacity
+            style={styles.findFriendsBanner}
+            onPress={() => setIsFindFriendsOpen(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Find and add new friends"
+          >
+            <View style={styles.findFriendsBannerContent}>
+              <Text style={styles.findFriendsBannerTitle}>Find Friends</Text>
+              <Text style={styles.findFriendsBannerSub}>
+                Search by name or username to connect and share schedules
+              </Text>
+            </View>
+            <Text style={styles.findFriendsBannerAction}>Search →</Text>
+          </TouchableOpacity>
 
           {/* 3. Connected Friends Section */}
           <ConnectedFriendsSection
@@ -333,6 +372,39 @@ const styles = StyleSheet.create({
   feedbackDismissText: {
     fontFamily: FONTS.bold,
     fontSize: 12.5,
+    color: COLORS.darkGreen,
+  },
+  findFriendsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(91, 105, 85, 0.1)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(91, 105, 85, 0.25)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 28,
+  },
+  findFriendsBannerContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  findFriendsBannerTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    color: COLORS.darkGreen,
+    marginBottom: 2,
+  },
+  findFriendsBannerSub: {
+    fontFamily: FONTS.regular,
+    fontSize: 12.5,
+    color: '#344738',
+    lineHeight: 17,
+  },
+  findFriendsBannerAction: {
+    fontFamily: FONTS.bold,
+    fontSize: 13.5,
     color: COLORS.darkGreen,
   },
 });
