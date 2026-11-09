@@ -132,14 +132,9 @@ export const ReceivedRequestCard: React.FC<ReceivedRequestCardProps> = ({
 
             {/* Requester Information */}
             <View style={styles.infoColumn}>
-              <View style={styles.nameRow}>
-                <Text style={styles.requesterName} numberOfLines={1}>
-                  {request.name}
-                </Text>
-                {request.requestedAt && (
-                  <Text style={styles.requestedAtText}>{request.requestedAt}</Text>
-                )}
-              </View>
+              <Text style={styles.requesterName} numberOfLines={1}>
+                {request.name}
+              </Text>
 
               <Text style={styles.requesterUsername} numberOfLines={1}>
                 {request.username}
@@ -167,16 +162,6 @@ export const ReceivedRequestCard: React.FC<ReceivedRequestCardProps> = ({
                   {request.mutualFriendsCount} mutual friends
                 </Text>
               </View>
-
-              {/* Modern Detail Pills (Program & College context) */}
-              {request.program && (
-                <View style={styles.programPill}>
-                  <Text style={styles.programPillText} numberOfLines={1}>
-                    {request.program}
-                    {request.yearLevel ? ` • ${request.yearLevel}` : ''}
-                  </Text>
-                </View>
-              )}
             </View>
 
             {/* Subtle Chevron indicator */}
@@ -293,24 +278,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
   requesterName: {
     fontFamily: FONTS.bold,
     fontSize: 17,
     color: '#132016',
     letterSpacing: -0.2,
-    flex: 1,
-    marginRight: 6,
-  },
-  requestedAtText: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: '#657C69',
+    marginBottom: 2,
   },
   requesterUsername: {
     fontFamily: FONTS.medium,
@@ -322,25 +295,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 2,
   },
   mutualFriendsText: {
     fontFamily: FONTS.regular,
     fontSize: 13,
     color: '#3B4E40',
-  },
-  programPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#E7EFE5',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    marginTop: 2,
-  },
-  programPillText: {
-    fontFamily: FONTS.medium,
-    fontSize: 11.5,
-    color: '#264D32',
   },
   chevronWrapper: {
     paddingLeft: 4,

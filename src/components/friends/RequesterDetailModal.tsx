@@ -85,44 +85,9 @@ export const RequesterDetailModal: React.FC<RequesterDetailModalProps> = ({
 
               <View style={styles.statusBadge}>
                 <View style={styles.statusDot} />
-                <Text style={styles.statusBadgeText}>
-                  Pending Request • {request.requestedAt || 'Recent'}
-                </Text>
+                <Text style={styles.statusBadgeText}>Pending Request</Text>
               </View>
             </View>
-
-            {/* Academic Information */}
-            <View style={styles.sectionBox}>
-              <Text style={styles.sectionHeading}>Academic Information</Text>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Program:</Text>
-                <Text style={styles.infoValue}>
-                  {request.program || 'Cebu Normal University Student'}
-                </Text>
-              </View>
-              {request.department && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>College:</Text>
-                  <Text style={styles.infoValue}>{request.department}</Text>
-                </View>
-              )}
-              {request.yearLevel && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Year Level:</Text>
-                  <Text style={styles.infoValue}>{request.yearLevel}</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Personal Message / Note */}
-            {request.bioNote && (
-              <View style={styles.sectionBox}>
-                <Text style={styles.sectionHeading}>Message Note</Text>
-                <View style={styles.quoteCard}>
-                  <Text style={styles.quoteText}>"{request.bioNote}"</Text>
-                </View>
-              </View>
-            )}
 
             {/* Mutual Friends Breakdown */}
             <View style={styles.sectionBox}>
@@ -143,7 +108,7 @@ export const RequesterDetailModal: React.FC<RequesterDetailModalProps> = ({
                 </View>
               ) : (
                 <Text style={styles.mutualFallbackText}>
-                  Connected through shared university classes and mutual circles.
+                  {request.mutualFriendsCount} mutual connections on CNUFree.
                 </Text>
               )}
             </View>
@@ -316,36 +281,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.darkGreen,
     marginBottom: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  infoLabel: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#556D59',
-    width: 85,
-  },
-  infoValue: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: '#17271B',
-    flex: 1,
-  },
-  quoteCard: {
-    backgroundColor: '#F3F7F2',
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.darkGreen,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  quoteText: {
-    fontFamily: FONTS.italic,
-    fontSize: 13,
-    color: '#263D2B',
-    lineHeight: 18,
   },
   mutualHeaderRow: {
     marginBottom: 8,
