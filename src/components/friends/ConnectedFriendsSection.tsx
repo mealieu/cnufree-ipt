@@ -61,7 +61,11 @@ export const ConnectedFriendsSection: React.FC<ConnectedFriendsSectionProps> = (
                 accessibilityRole="button"
                 accessibilityLabel={`${friend.name}, ${friend.username}`}
               >
-                <View style={styles.avatarCircle} />
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitialsText}>
+                    {friend.initials || friend.name.slice(0, 2).toUpperCase()}
+                  </Text>
+                </View>
                 <View style={styles.friendTextContainer}>
                   <Text style={styles.friendName} numberOfLines={1}>
                     {friend.name}
@@ -69,6 +73,11 @@ export const ConnectedFriendsSection: React.FC<ConnectedFriendsSectionProps> = (
                   <Text style={styles.friendUsername} numberOfLines={1}>
                     {friend.username}
                   </Text>
+                  {friend.availabilitySummary && (
+                    <Text style={styles.availabilitySummary} numberOfLines={1}>
+                      {friend.availabilitySummary}
+                    </Text>
+                  )}
                 </View>
               </TouchableOpacity>
 
@@ -149,6 +158,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.friendsAvatarBg,
     borderWidth: 2,
     borderColor: COLORS.friendsAvatarBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitialsText: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    color: COLORS.friendsOliveText,
   },
   friendTextContainer: {
     flex: 1,
@@ -165,6 +181,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: 14.5,
     color: '#18221B',
+    marginTop: 2,
+  },
+  availabilitySummary: {
+    fontFamily: FONTS.medium,
+    fontSize: 12.5,
+    color: '#344738',
     marginTop: 2,
   },
   scheduleButton: {
