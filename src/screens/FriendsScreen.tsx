@@ -32,6 +32,7 @@ import {
 } from '../mock/friendsData';
 import { FriendsSearchBar } from '../components/friends/FriendsSearchBar';
 import { ConnectedFriendsSection } from '../components/friends/ConnectedFriendsSection';
+import { ConnectedFriendsList } from '../components/friends/ConnectedFriendsList';
 import { PendingRequestsSection } from '../components/friends/PendingRequestsSection';
 import { FriendGroupsSection } from '../components/friends/FriendGroupsSection';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
@@ -55,6 +56,8 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
 
   // Section Interactive States
   const [showAllFriends, setShowAllFriends] = useState<boolean>(false);
+  const [isViewingAllConnectedList, setIsViewingAllConnectedList] =
+    useState<boolean>(false);
   const [activeRequestPreview, setActiveRequestPreview] =
     useState<FriendRequestDirection | null>(null);
   const [isManagingGroups, setIsManagingGroups] = useState<boolean>(false);
@@ -117,7 +120,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
       onOpenViewAllFriends();
       return;
     }
-    setShowAllFriends((prev) => !prev);
+    setIsViewingAllConnectedList(true);
   }, [onOpenViewAllFriends]);
 
   const handlePressFriendSchedule = useCallback(
@@ -227,6 +230,52 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
     },
     [receivedRequests]
   );
+
+  // If viewing all connected friends list (FS-06)
+  if (isViewingAllConnectedList) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.friendsOliveText}
+              colors={[COLORS.friendsOliveText]}
+            />
+          }
+        >
+          <View style={styles.contentContainer}>
+            <ConnectedFriendsList
+              friends={baseConnectedFriends}
+              onSelectFriend={(scheduleProfile) => {
+                if (onViewFriendSchedule) {
+                  onViewFriendSchedule(scheduleProfile);
+                } else {
+                  setSelectedScheduleFriend(scheduleProfile);
+                }
+              }}
+              onBack={() => setIsViewingAllConnectedList(false)}
+            />
+          </View>
+        </ScrollView>
+        <BottomNavBar
+          activeTab="friends"
+          onTabChange={(tab) => {
+            setIsViewingAllConnectedList(false);
+            onNavigateTab?.(tab);
+          }}
+          notificationBadgeCount={
+            receivedRequests.filter((r) => r.status === 'pending').length
+          }
+        />
+      </SafeAreaView>
+    );
+  }
 
   // If viewing an individual connected friend's schedule
   if (selectedScheduleFriend) {
