@@ -16,6 +16,7 @@ import { FONTS } from '../constants/typography';
 import {
   FriendsScreenProps,
   ConnectedFriend,
+  FriendRequestItem,
   FriendRequestDirection,
   FriendGroupItem,
 } from '../types/friends';
@@ -67,15 +68,18 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
   const [isViewingReceivedScreen, setIsViewingReceivedScreen] = useState<boolean>(false);
 
-  // Mock Data Collections
-  const [receivedRequests] = useState(INITIAL_RECEIVED_REQUESTS);
+  // Live collections for friend requests and connected friends (FS-05 connection state updates)
+  const [connectedFriends, setConnectedFriends] =
+    useState<ConnectedFriend[]>(INITIAL_CONNECTED_FRIENDS);
+  const [receivedRequests, setReceivedRequests] =
+    useState<FriendRequestItem[]>(INITIAL_RECEIVED_REQUESTS);
   const [sentRequests] = useState(INITIAL_SENT_REQUESTS);
   const [friendGroups] = useState(INITIAL_FRIEND_GROUPS);
 
   // Active source list of connected friends
   const baseConnectedFriends = useMemo(() => {
-    return showAllFriends ? EXTENDED_CONNECTED_FRIENDS : INITIAL_CONNECTED_FRIENDS;
-  }, [showAllFriends]);
+    return showAllFriends ? EXTENDED_CONNECTED_FRIENDS : connectedFriends;
+  }, [showAllFriends, connectedFriends]);
 
   // Filtered connected friends based on search query & selected group
   const filteredFriends = useMemo(() => {
@@ -172,6 +176,58 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
     setFeedbackBanner('Create Friend Group selected. Showing all friend groups.');
   }, [onOpenCreateGroup]);
 
+  // Handlers for Acceptance and Decline state updates (FS-05)
+  const handleAcceptFriendRequest = useCallback(
+    (requestId: string, newConnectedFriend?: ConnectedFriend) => {
+      setReceivedRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: 'accepted' as const } : r
+        )
+      );
+      if (newConnectedFriend) {
+        setConnectedFriends((prev) => {
+          if (prev.some((f) => f.id === newConnectedFriend.id)) return prev;
+          return [newConnectedFriend, ...prev];
+        });
+        setFeedbackBanner(
+          `Connected with ${newConnectedFriend.name}! They now appear in your Connected Friends.`
+        );
+      }
+    },
+    []
+  );
+
+  const handleDeclineFriendRequest = useCallback((requestId: string) => {
+    setReceivedRequests((prev) =>
+      prev.map((r) =>
+        r.id === requestId ? { ...r, status: 'declined' as const } : r
+      )
+    );
+  }, []);
+
+  const handleUndoFriendRequest = useCallback(
+    (requestId: string) => {
+      const targetReq = receivedRequests.find((r) => r.id === requestId);
+      setReceivedRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: 'pending' as const } : r
+        )
+      );
+      if (targetReq) {
+        setConnectedFriends((prev) =>
+          prev.filter(
+            (f) =>
+              f.username !== targetReq.username &&
+              f.id !== `cf-${targetReq.id}` &&
+              f.name !== targetReq.name
+          )
+        );
+        setFeedbackBanner(`Reverted friend request for ${targetReq.name}.`);
+      }
+    },
+    [receivedRequests]
+  );
+
   // If viewing an individual connected friend's schedule
   if (selectedScheduleFriend) {
     return (
@@ -186,10 +242,23 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   if (isViewingReceivedScreen) {
     return (
       <ReceivedFriendRequestsScreen
+        requests={receivedRequests}
+        connectedFriends={connectedFriends}
         onBack={() => setIsViewingReceivedScreen(false)}
         onNavigateTab={(tab) => {
           setIsViewingReceivedScreen(false);
           onNavigateTab?.(tab);
+        }}
+        onAcceptRequest={handleAcceptFriendRequest}
+        onDeclineRequest={handleDeclineFriendRequest}
+        onUndoRequest={handleUndoFriendRequest}
+        onViewFriendSchedule={(friendSchedule) => {
+          setIsViewingReceivedScreen(false);
+          if (onViewFriendSchedule) {
+            onViewFriendSchedule(friendSchedule);
+          } else {
+            setSelectedScheduleFriend(friendSchedule);
+          }
         }}
       />
     );
@@ -260,9 +329,9 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
 
           {/* 4. Pending Friend Requests Section */}
           <PendingRequestsSection
-            receivedCount={receivedRequests.length}
+            receivedCount={receivedRequests.filter((r) => r.status === 'pending').length}
             sentCount={sentRequests.length}
-            receivedRequests={receivedRequests}
+            receivedRequests={receivedRequests.filter((r) => r.status === 'pending')}
             sentRequests={sentRequests}
             activePreviewType={activeRequestPreview}
             onPressReceived={handlePressReceived}

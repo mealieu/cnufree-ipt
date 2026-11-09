@@ -107,6 +107,73 @@ export const EXTENDED_CONNECTED_FRIENDS: ConnectedFriend[] = [
 ];
 
 /**
+ * Mock Connected Friend for Jay N. Ty (FS-05 Acceptance connection state update)
+ */
+export const MOCK_CONNECTED_JAY_TY: ConnectedFriend = {
+  id: 'cf-4',
+  name: 'Jay N. Ty',
+  username: '@jntexpress',
+  initials: 'JT',
+  mutualFriendsCount: 3,
+  groupIds: ['fg-it-pwends'],
+  availabilitySummary: 'Free until 3:00 PM',
+  scheduleProfile: {
+    id: 'cf-4',
+    name: 'Jay N. Ty',
+    nickname: 'Jay',
+    relationship: 'IT Pwends',
+    initials: 'JT',
+    status: 'free',
+    untilTime: '3:00PM',
+    nextActivity: '3:30pm IT212 Database Systems',
+    groups: ['dyd'],
+    currentLocation: 'CCS Computer Lab 3',
+    freeSlots: [
+      { startHour: 9.0, endHour: 11.5 },
+      { startHour: 13.0, endHour: 15.0 },
+      { startHour: 16.5, endHour: 18.0 },
+    ],
+    scheduleNotes: 'Available for study and coding during afternoon vacant slots.',
+    schedule: MARIA_WEEKLY_SCHEDULE[0].items,
+  },
+};
+
+/**
+ * Creates or retrieves a connected friend profile when accepting a friend request (FS-05)
+ */
+export function createConnectedFriendFromRequest(request: FriendRequestItem): ConnectedFriend {
+  if (request.id === 'req-rec-1' || request.username === '@Lalah') {
+    return EXTENDED_CONNECTED_FRIENDS[2];
+  }
+  if (request.id === 'req-rec-2' || request.username === '@jntexpress') {
+    return MOCK_CONNECTED_JAY_TY;
+  }
+  return {
+    id: `cf-${request.id}`,
+    name: request.name,
+    username: request.username,
+    initials: request.initials,
+    mutualFriendsCount: request.mutualFriendsCount,
+    groupIds: ['fg-it-pwends'],
+    availabilitySummary: 'Available now',
+    scheduleProfile: {
+      id: `cf-${request.id}`,
+      name: request.name,
+      nickname: request.name.split(' ')[0],
+      relationship: 'Friend',
+      initials: request.initials,
+      status: 'free',
+      untilTime: '2:00PM',
+      nextActivity: 'Free Time',
+      groups: ['dyd'],
+      currentLocation: 'Campus',
+      freeSlots: [{ startHour: 10.0, endHour: 14.0 }],
+      schedule: MARIA_WEEKLY_SCHEDULE[0].items,
+    },
+  };
+}
+
+/**
  * Received Friend Requests (matches "Received (2)" in Page 1 and Page 4 of UI Guide)
  */
 export const INITIAL_RECEIVED_REQUESTS: FriendRequestItem[] = [

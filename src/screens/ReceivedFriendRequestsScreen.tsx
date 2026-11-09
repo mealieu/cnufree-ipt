@@ -9,7 +9,6 @@ import {
   Platform,
   StatusBar as RNStatusBar,
   RefreshControl,
-  Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -19,10 +18,16 @@ import {
   FriendRequestItem,
   ReceivedFriendRequestsScreenProps,
   FriendRequestStatus,
+  ConnectedFriend,
 } from '../types/friends';
-import { INITIAL_RECEIVED_REQUESTS, INITIAL_SENT_REQUESTS } from '../mock/friendsData';
+import {
+  INITIAL_RECEIVED_REQUESTS,
+  INITIAL_SENT_REQUESTS,
+  createConnectedFriendFromRequest,
+} from '../mock/friendsData';
 import { ReceivedRequestCard } from '../components/friends/ReceivedRequestCard';
 import { RequesterDetailModal } from '../components/friends/RequesterDetailModal';
+import { FriendRequestConfirmModal } from '../components/friends/FriendRequestConfirmModal';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { TabId } from '../types/navigation';
 
@@ -33,7 +38,9 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
   onNavigateTab,
   onAcceptRequest,
   onDeclineRequest,
+  onUndoRequest,
   onSwitchToSent,
+  onViewFriendSchedule,
 }) => {
   // State for requests collection
   const [requestsList, setRequestsList] = useState<FriendRequestItem[]>(
@@ -43,21 +50,33 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
   // Segmented Tab ('received' vs 'sent')
   const [activeSegmentTab, setActiveSegmentTab] = useState<'received' | 'sent'>('received');
 
-  // Selected requester for detail modal
+  // Selected requester for detail bottom sheet
   const [selectedRequester, setSelectedRequester] = useState<FriendRequestItem | null>(null);
 
-  // Decline confirmation modal state
-  const [declineTarget, setDeclineTarget] = useState<FriendRequestItem | null>(null);
+  // Confirmation Modal state for FS-05 (Acceptance & Decline confirmation)
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    visible: boolean;
+    type: 'accept' | 'decline';
+    request: FriendRequestItem | null;
+  }>({
+    visible: false,
+    type: 'accept',
+    request: null,
+  });
 
-  // Feedback Banner Notification state
-  const [feedbackBanner, setFeedbackBanner] = useState<{
+  // Action submission feedback state (simulates asynchronous submission processing)
+  const [isSubmittingAction, setIsSubmittingAction] = useState<boolean>(false);
+
+  // Submission Feedback Banner state
+  const [submissionFeedback, setSubmissionFeedback] = useState<{
     message: string;
     type: 'success' | 'info';
     requestId?: string;
+    newFriend?: ConnectedFriend;
   } | null>(null);
 
   // Pull-to-refresh
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // Calculate pending received count dynamically
   const pendingReceivedCount = useMemo(() => {
@@ -72,82 +91,135 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
     }, 500);
   }, []);
 
-  // Accept Request Handler (Functional)
-  const handleAccept = useCallback(
+  // 1. Trigger Acceptance Confirmation Modal (FS-05)
+  const handlePromptAccept = useCallback((targetRequest: FriendRequestItem) => {
+    setConfirmModalConfig({
+      visible: true,
+      type: 'accept',
+      request: targetRequest,
+    });
+  }, []);
+
+  // 2. Trigger Decline Confirmation Modal (FS-05)
+  const handlePromptDecline = useCallback((targetRequest: FriendRequestItem) => {
+    setConfirmModalConfig({
+      visible: true,
+      type: 'decline',
+      request: targetRequest,
+    });
+  }, []);
+
+  // 3. Confirm Submission Handler with simulated processing feedback and state updates (FS-05)
+  const handleConfirmAction = useCallback(
+    (targetRequest: FriendRequestItem) => {
+      setIsSubmittingAction(true);
+
+      // Simulate network submission roundtrip for responsive feedback
+      setTimeout(() => {
+        const isAccept = confirmModalConfig.type === 'accept';
+
+        if (isAccept) {
+          // Update request status to 'accepted'
+          setRequestsList((prev) =>
+            prev.map((r) =>
+              r.id === targetRequest.id
+                ? { ...r, status: 'accepted' as FriendRequestStatus }
+                : r
+            )
+          );
+
+          // Update connection state: generate or fetch connected friend profile
+          const newFriend = createConnectedFriendFromRequest(targetRequest);
+
+          // Set submission feedback
+          setSubmissionFeedback({
+            message: `${targetRequest.name} is now your connected friend! You can both view each other's schedules.`,
+            type: 'success',
+            requestId: targetRequest.id,
+            newFriend,
+          });
+
+          // Propagate updated connection state to parent/context
+          onAcceptRequest?.(targetRequest.id, newFriend);
+        } else {
+          // Update request status to 'declined'
+          setRequestsList((prev) =>
+            prev.map((r) =>
+              r.id === targetRequest.id
+                ? { ...r, status: 'declined' as FriendRequestStatus }
+                : r
+            )
+          );
+
+          // Set submission feedback
+          setSubmissionFeedback({
+            message: `Declined friend request from ${targetRequest.name}.`,
+            type: 'info',
+            requestId: targetRequest.id,
+          });
+
+          // Propagate updated request state to parent/context
+          onDeclineRequest?.(targetRequest.id);
+        }
+
+        setIsSubmittingAction(false);
+        setConfirmModalConfig({
+          visible: false,
+          type: 'accept',
+          request: null,
+        });
+      }, 420);
+    },
+    [confirmModalConfig.type, onAcceptRequest, onDeclineRequest]
+  );
+
+  // 4. Cancel confirmation modal
+  const handleCancelModal = useCallback(() => {
+    setConfirmModalConfig({
+      visible: false,
+      type: 'accept',
+      request: null,
+    });
+  }, []);
+
+  // 5. Undo Action Handler (FS-05 Connection State Reversion)
+  const handleUndo = useCallback(
     (targetRequest: FriendRequestItem) => {
       setRequestsList((prev) =>
         prev.map((r) =>
-          r.id === targetRequest.id ? { ...r, status: 'accepted' as FriendRequestStatus } : r
+          r.id === targetRequest.id
+            ? { ...r, status: 'pending' as FriendRequestStatus }
+            : r
         )
       );
 
-      setFeedbackBanner({
-        message: `Accepted friend request from ${targetRequest.name}`,
-        type: 'success',
-        requestId: targetRequest.id,
+      setSubmissionFeedback({
+        message: `Action undone. Request from ${targetRequest.name} is back in pending.`,
+        type: 'info',
       });
 
-      onAcceptRequest?.(targetRequest.id);
+      onUndoRequest?.(targetRequest.id);
     },
-    [onAcceptRequest]
+    [onUndoRequest]
   );
 
-  // Prompt Decline Request (opens confirmation dialog)
-  const handlePromptDecline = useCallback((targetRequest: FriendRequestItem) => {
-    setDeclineTarget(targetRequest);
-  }, []);
-
-  // Confirm Decline Request Handler (Functional)
-  const handleConfirmDecline = useCallback(() => {
-    if (!declineTarget) return;
-
-    const target = declineTarget;
-    setRequestsList((prev) =>
-      prev.map((r) =>
-        r.id === target.id ? { ...r, status: 'declined' as FriendRequestStatus } : r
-      )
-    );
-
-    setFeedbackBanner({
-      message: `Declined friend request from ${target.name}`,
-      type: 'info',
-      requestId: target.id,
-    });
-
-    onDeclineRequest?.(target.id);
-    setDeclineTarget(null);
-  }, [declineTarget, onDeclineRequest]);
-
-  // Undo Action Handler
-  const handleUndo = useCallback((targetRequest: FriendRequestItem) => {
-    setRequestsList((prev) =>
-      prev.map((r) =>
-        r.id === targetRequest.id ? { ...r, status: 'pending' as FriendRequestStatus } : r
-      )
-    );
-    setFeedbackBanner({
-      message: `Reverted request for ${targetRequest.name} back to pending`,
-      type: 'info',
-    });
-  }, []);
-
-  // Reset Demo Requests (Allows reviewer to test acceptance/decline repeatedly)
+  // 6. Reset Demo Requests (Allows evaluator to test entire flow repeatedly)
   const handleResetDemo = useCallback(() => {
     setRequestsList(INITIAL_RECEIVED_REQUESTS);
-    setFeedbackBanner({
-      message: 'Reset received friend requests demo data',
+    setSubmissionFeedback({
+      message: 'Demo requests reset to initial pending state.',
       type: 'info',
     });
   }, []);
 
-  // Sent Tab Press Handler
+  // 7. Sent Tab Handler
   const handlePressSentTab = useCallback(() => {
     if (onSwitchToSent) {
       onSwitchToSent();
       return;
     }
     setActiveSegmentTab('sent');
-    setFeedbackBanner({
+    setSubmissionFeedback({
       message: 'Viewing outgoing pending friend requests ([FS-03] Sent Requests)',
       type: 'info',
     });
@@ -269,39 +341,114 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
             </TouchableOpacity>
           </View>
 
-          {/* ================= 4. FEEDBACK NOTIFICATION BANNER ================= */}
-          {feedbackBanner && (
+          {/* ================= 4. SUBMISSION FEEDBACK BANNER (FS-05) ================= */}
+          {submissionFeedback && (
             <View
               style={[
-                styles.feedbackToast,
-                feedbackBanner.type === 'success'
-                  ? styles.feedbackToastSuccess
-                  : styles.feedbackToastInfo,
+                styles.submissionToast,
+                submissionFeedback.type === 'success'
+                  ? styles.submissionToastSuccess
+                  : styles.submissionToastInfo,
               ]}
             >
-              <View style={styles.feedbackToastLeft}>
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Circle cx="12" cy="12" r="10" fill="#145A2E" />
-                  <Path
-                    d="M8 12L11 15L16 9"
-                    stroke="#FFFFFF"
-                    strokeWidth={2.4}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-                <Text style={styles.feedbackToastText} numberOfLines={2}>
-                  {feedbackBanner.message}
-                </Text>
+              <View style={styles.toastMainRow}>
+                <View style={styles.toastIconWrap}>
+                  {submissionFeedback.type === 'success' ? (
+                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                      <Circle cx="12" cy="12" r="10" fill="#145A2E" />
+                      <Path
+                        d="M8 12L11 15L16 9"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.4}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  ) : (
+                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                      <Circle cx="12" cy="12" r="10" fill="#5C7057" />
+                      <Path
+                        d="M12 8V12M12 16H12.01"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.4}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                  )}
+                </View>
+
+                <View style={styles.toastTextCol}>
+                  <Text style={styles.toastTitleText}>
+                    {submissionFeedback.type === 'success'
+                      ? 'Connection State Updated'
+                      : 'Friend Request Updated'}
+                  </Text>
+                  <Text style={styles.toastMessageText}>
+                    {submissionFeedback.message}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setSubmissionFeedback(null)}
+                  style={styles.toastDismissBtn}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Dismiss message"
+                >
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M18 6L6 18M6 6L18 18"
+                      stroke="#425547"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                onPress={() => setFeedbackBanner(null)}
-                style={styles.feedbackDismissBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.feedbackDismissText}>Dismiss</Text>
-              </TouchableOpacity>
+              {/* Toast Action Buttons Row */}
+              <View style={styles.toastActionsRow}>
+                {submissionFeedback.newFriend && onViewFriendSchedule && (
+                  <TouchableOpacity
+                    style={styles.toastScheduleBtn}
+                    onPress={() => {
+                      if (submissionFeedback.newFriend?.scheduleProfile) {
+                        onViewFriendSchedule(
+                          submissionFeedback.newFriend.scheduleProfile
+                        );
+                      }
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z"
+                        stroke="#145A2E"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                    <Text style={styles.toastScheduleBtnText}>View Schedule</Text>
+                  </TouchableOpacity>
+                )}
+
+                {submissionFeedback.requestId && (
+                  <TouchableOpacity
+                    style={styles.toastUndoBtn}
+                    onPress={() => {
+                      const req = requestsList.find(
+                        (r) => r.id === submissionFeedback.requestId
+                      );
+                      if (req) {
+                        handleUndo(req);
+                      }
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.toastUndoBtnText}>Undo</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
 
@@ -325,7 +472,7 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
                   </View>
                   <Text style={styles.emptyTitle}>All Caught Up!</Text>
                   <Text style={styles.emptySubtitle}>
-                    You have no pending friend requests to review right now.
+                    You have responded to all received friend requests.
                   </Text>
                   <TouchableOpacity
                     style={styles.resetButton}
@@ -341,7 +488,7 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
                   <ReceivedRequestCard
                     key={request.id}
                     request={request}
-                    onAccept={handleAccept}
+                    onAccept={handlePromptAccept}
                     onDecline={handlePromptDecline}
                     onViewDetails={(req) => setSelectedRequester(req)}
                     onUndo={handleUndo}
@@ -389,7 +536,9 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
             /* Sent Tab Content Placeholder (FS-03 Scope Boundary) */
             <View style={styles.sentPreviewBox}>
               <View style={styles.sentPreviewHeader}>
-                <Text style={styles.sentPreviewTitle}>Outgoing Requests ({sentCount})</Text>
+                <Text style={styles.sentPreviewTitle}>
+                  Outgoing Requests ({sentCount})
+                </Text>
                 <Text style={styles.sentPreviewSubtitle}>
                   Requests you sent waiting for acceptance. Handled in ticket [FS-03].
                 </Text>
@@ -402,7 +551,9 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
                   </View>
                   <View style={styles.sentInfoCol}>
                     <Text style={styles.sentName}>{sent.name}</Text>
-                    <Text style={styles.sentSub}>{sent.username} • {sent.requestedAt}</Text>
+                    <Text style={styles.sentSub}>
+                      {sent.username} • {sent.requestedAt}
+                    </Text>
                   </View>
                   <View style={styles.sentPendingBadge}>
                     <Text style={styles.sentPendingText}>Pending</Text>
@@ -424,69 +575,24 @@ export const ReceivedFriendRequestsScreen: React.FC<ReceivedFriendRequestsScreen
         </View>
       </ScrollView>
 
-      {/* ================= 6. REQUESTER DETAIL BOTTOM SHEET / MODAL ================= */}
+      {/* ================= 6. REQUESTER DETAIL BOTTOM SHEET ================= */}
       <RequesterDetailModal
         request={selectedRequester}
         visible={!!selectedRequester}
         onClose={() => setSelectedRequester(null)}
-        onAccept={handleAccept}
+        onAccept={handlePromptAccept}
         onDecline={handlePromptDecline}
       />
 
-      {/* ================= 7. DECLINE CONFIRMATION MODAL ================= */}
-      <Modal
-        visible={!!declineTarget}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDeclineTarget(null)}
-      >
-        <View style={styles.confirmOverlay}>
-          <TouchableOpacity
-            style={styles.confirmBackdrop}
-            activeOpacity={1}
-            onPress={() => setDeclineTarget(null)}
-          />
-
-          <View style={styles.confirmCard}>
-            <View style={styles.confirmIconWrap}>
-              <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-                <Circle cx="12" cy="12" r="10" stroke="#B25D5D" strokeWidth={2} />
-                <Path
-                  d="M15 9L9 15M9 9L15 15"
-                  stroke="#B25D5D"
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                />
-              </Svg>
-            </View>
-
-            <Text style={styles.confirmTitle}>Decline Friend Request?</Text>
-            <Text style={styles.confirmMessage}>
-              Are you sure you want to decline the friend request from{' '}
-              <Text style={{ fontFamily: FONTS.bold }}>{declineTarget?.name}</Text>? They won't be
-              notified that you declined.
-            </Text>
-
-            <View style={styles.confirmActionsRow}>
-              <TouchableOpacity
-                style={styles.confirmCancelBtn}
-                onPress={() => setDeclineTarget(null)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.confirmCancelText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.confirmDeclineBtn}
-                onPress={handleConfirmDecline}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.confirmDeclineText}>Decline</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* ================= 7. CONFIRMATION MODAL FOR ACCEPT / DECLINE (FS-05) ================= */}
+      <FriendRequestConfirmModal
+        visible={confirmModalConfig.visible}
+        type={confirmModalConfig.type}
+        request={confirmModalConfig.request}
+        isSubmitting={isSubmittingAction}
+        onConfirm={handleConfirmAction}
+        onCancel={handleCancelModal}
+      />
 
       {/* ================= 8. BOTTOM NAVIGATION BAR ================= */}
       <BottomNavBar
@@ -577,7 +683,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 14,
-    marginBottom: 22,
+    marginBottom: 20,
   },
   segmentTab: {
     paddingVertical: 10,
@@ -626,45 +732,97 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     color: '#283B2C',
   },
-  feedbackToast: {
+  submissionToast: {
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+    borderWidth: 1.2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1A5A31',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {},
+    }),
+  },
+  submissionToastSuccess: {
+    backgroundColor: '#EDF8F1',
+    borderColor: '#80D09B',
+  },
+  submissionToastInfo: {
+    backgroundColor: '#EEF4ED',
+    borderColor: '#B3CEB6',
+  },
+  toastMainRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginBottom: 16,
-    borderWidth: 1,
+    alignItems: 'flex-start',
   },
-  feedbackToastSuccess: {
-    backgroundColor: '#E7F7ED',
-    borderColor: '#8ADAA3',
-  },
-  feedbackToastInfo: {
-    backgroundColor: '#EDF3EC',
-    borderColor: '#B8D1BA',
-  },
-  feedbackToastLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 10,
+  toastIconWrap: {
     marginRight: 10,
+    marginTop: 2,
   },
-  feedbackToastText: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#134D25',
+  toastTextCol: {
     flex: 1,
   },
-  feedbackDismissBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+  toastTitleText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13.5,
+    color: COLORS.darkGreen,
+    marginBottom: 2,
   },
-  feedbackDismissText: {
+  toastMessageText: {
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    color: '#203926',
+    lineHeight: 18,
+  },
+  toastDismissBtn: {
+    padding: 4,
+    marginLeft: 6,
+  },
+  toastActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(26, 90, 49, 0.12)',
+  },
+  toastScheduleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#D7EFE0',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#97CDA6',
+  },
+  toastScheduleBtnText: {
     fontFamily: FONTS.bold,
     fontSize: 12.5,
     color: COLORS.darkGreen,
+  },
+  toastUndoBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BDCEBC',
+  },
+  toastUndoBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 12.5,
+    color: '#344737',
   },
   listSection: {
     marginTop: 2,
@@ -818,96 +976,5 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 13.5,
     color: COLORS.darkGreen,
-  },
-  confirmOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 17, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  confirmBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  confirmCard: {
-    backgroundColor: COLORS.cream,
-    borderRadius: 20,
-    borderWidth: 1.4,
-    borderColor: COLORS.requestCardBorder,
-    padding: 24,
-    width: '100%',
-    maxWidth: 380,
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.16,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 6,
-      },
-      default: {},
-    }),
-  },
-  confirmIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#FDECEC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  confirmTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 18,
-    color: '#1A291E',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  confirmMessage: {
-    fontFamily: FONTS.regular,
-    fontSize: 13.5,
-    color: '#4B6250',
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 20,
-  },
-  confirmActionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  confirmCancelBtn: {
-    flex: 1,
-    backgroundColor: '#E7EDE5',
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#C0D0BE',
-  },
-  confirmCancelText: {
-    fontFamily: FONTS.bold,
-    fontSize: 14,
-    color: '#344938',
-  },
-  confirmDeclineBtn: {
-    flex: 1,
-    backgroundColor: '#C0392B',
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  confirmDeclineText: {
-    fontFamily: FONTS.bold,
-    fontSize: 14,
-    color: '#FFFFFF',
   },
 });
