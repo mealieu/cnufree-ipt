@@ -30,7 +30,7 @@ export const AuthToggle: React.FC<AuthToggleProps> = ({ isLogin, onToggle }) => 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#7A8374', // Derived from reference image to match the gray-green inactive state
+    backgroundColor: '#7A8374', 
     borderRadius: 30,
     padding: 4,
     marginTop: 32,
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeButton: {
-    backgroundColor: '#1C1F1B', // Dark charcoal/black for active state
+    backgroundColor: '#1C1F1B', 
   },
   text: {
     fontFamily: 'DMSans_500Medium',
