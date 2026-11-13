@@ -285,46 +285,23 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   // If viewing all connected friends list (FS-06)
   if (isViewingAllConnectedList) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={COLORS.friendsOliveText}
-              colors={[COLORS.friendsOliveText]}
-            />
+      <ConnectedFriendsList
+        friends={baseConnectedFriends}
+        onSelectFriend={(scheduleProfile) => {
+          if (onViewFriendSchedule) {
+            onViewFriendSchedule(scheduleProfile);
+          } else {
+            setSelectedScheduleFriend(scheduleProfile);
           }
-        >
-          <View style={styles.contentContainer}>
-            <ConnectedFriendsList
-              friends={baseConnectedFriends}
-              onSelectFriend={(scheduleProfile) => {
-                if (onViewFriendSchedule) {
-                  onViewFriendSchedule(scheduleProfile);
-                } else {
-                  setSelectedScheduleFriend(scheduleProfile);
-                }
-              }}
-              onBack={() => setIsViewingAllConnectedList(false)}
-            />
-          </View>
-        </ScrollView>
-        <BottomNavBar
-          activeTab="friends"
-          onTabChange={(tab) => {
-            setIsViewingAllConnectedList(false);
-            onNavigateTab?.(tab);
-          }}
-          notificationBadgeCount={
-            receivedRequests.filter((r) => r.status === 'pending').length
-          }
-        />
-      </SafeAreaView>
+        }}
+        onBack={() => setIsViewingAllConnectedList(false)}
+        onNavigateTab={(tab) => {
+          setIsViewingAllConnectedList(false);
+          onNavigateTab?.(tab);
+        }}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+      />
     );
   }
 

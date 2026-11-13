@@ -6,58 +6,52 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  ActivityIndicator,
+  SafeAreaView,
+  RefreshControl,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { ConnectedFriend } from '../../types/friends';
 import { FriendAvailability } from '../../types/dashboard';
-import { UserAvatarSilhouette } from '../icons/NavIcons';
+import { TabId } from '../../types/navigation';
+import { BottomNavBar } from '../navigation/BottomNavBar';
 import { COLORS } from '../../constants/colors';
 import { styles } from './ConnectedFriendsList.styles';
 
-export type AvailabilityFilterType = 'all' | 'free' | 'busy' | 'unknown';
-
 export interface ConnectedFriendsListProps {
   friends?: (ConnectedFriend | FriendAvailability)[];
-  isLoading?: boolean;
-  isError?: boolean;
-  errorMessage?: string;
-  onRetry?: () => void;
-  onSelectFriend?: (friend: FriendAvailability) => void;
-  headerTitle?: string;
-  showSearch?: boolean;
-  showStatusFilters?: boolean;
   onBack?: () => void;
+  onNavigateTab?: (tab: TabId) => void;
+  onSelectFriend?: (friend: FriendAvailability) => void;
+  onRemoveFriend?: (friend: ConnectedFriend | FriendAvailability) => void;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
   friends = [],
-  isLoading = false,
-  isError = false,
-  errorMessage = 'Failed to load friends. Please try again.',
-  onRetry,
-  onSelectFriend,
-  headerTitle = 'Connected Friends',
-  showSearch = true,
-  showStatusFilters = true,
   onBack,
+  onNavigateTab,
+  onSelectFriend,
+  onRemoveFriend,
+  refreshing = false,
+  onRefresh,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<AvailabilityFilterType>('all');
   const [failedImageIds, setFailedImageIds] = useState<Record<string, boolean>>({});
 
-  // Deduplicate and normalize friend data
+  // Normalize friends and compute availability summaries
   const normalizedFriends = useMemo(() => {
     const seen = new Set<string>();
     const list: Array<{
       id: string;
       name: string;
-      username?: string;
+      username: string;
       initials: string;
       avatarUrl?: string;
-      status: 'free' | 'busy' | 'unknown';
       availabilitySummary: string;
       scheduleProfile: FriendAvailability;
-      groups: string[];
+      originalItem: ConnectedFriend | FriendAvailability;
     }> = [];
 
     for (const item of friends) {
@@ -69,7 +63,9 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
         ? item.scheduleProfile
         : (item as FriendAvailability);
 
-      // Determine availability respecting privacy: Do not classify missing schedules as Free
+      // Handle availability summary respecting privacy:
+      // Examples from Figma specification:
+      // "Free until 11:00 AM", "Occupied until 1:00 PM", "Availability unavailable"
       const isMissingOrPrivate =
         !scheduleProfile ||
         scheduleProfile.isPrivate === true ||
@@ -77,156 +73,127 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
         scheduleProfile.status === 'unknown' ||
         (scheduleProfile.status !== 'free' && scheduleProfile.status !== 'busy');
 
-      const status: 'free' | 'busy' | 'unknown' = isMissingOrPrivate
-        ? 'unknown'
-        : scheduleProfile.status === 'free'
-        ? 'free'
-        : 'busy';
-
-      let availabilitySummary = '';
-      if (isConnectedFriend && item.availabilitySummary) {
-        availabilitySummary = item.availabilitySummary;
-      } else if (status === 'unknown') {
+      let availabilitySummary = 'Availability unavailable';
+      if (isMissingOrPrivate) {
         availabilitySummary = scheduleProfile?.isPrivate
-          ? 'Schedule is private'
-          : 'Schedule unavailable';
-      } else if (status === 'free') {
-        availabilitySummary = scheduleProfile?.untilTime
+          ? 'Availability unavailable'
+          : 'Availability unavailable';
+      } else if (scheduleProfile.status === 'free') {
+        availabilitySummary = scheduleProfile.untilTime
           ? `Free until ${scheduleProfile.untilTime}`
           : 'Free now';
-      } else {
-        availabilitySummary = scheduleProfile?.untilTime
-          ? `Busy until ${scheduleProfile.untilTime}`
-          : 'Busy now';
+      } else if (scheduleProfile.status === 'busy') {
+        availabilitySummary = scheduleProfile.untilTime
+          ? `Occupied until ${scheduleProfile.untilTime}`
+          : 'Occupied now';
       }
+
+      // If item already carries custom summary from mock data, use it if non-empty
+      if (isConnectedFriend && item.availabilitySummary) {
+        availabilitySummary = item.availabilitySummary;
+      }
+
+      const username =
+        'username' in item && item.username
+          ? item.username
+          : `@${item.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
 
       list.push({
         id: item.id,
         name: item.name,
-        username: 'username' in item ? item.username : undefined,
+        username,
         initials: item.initials || item.name.slice(0, 2).toUpperCase(),
         avatarUrl: item.avatarUrl,
-        status,
         availabilitySummary,
         scheduleProfile,
-        groups: scheduleProfile?.groups || [],
+        originalItem: item,
       });
     }
 
     return list;
   }, [friends]);
 
-  // Compute status counts
-  const counts = useMemo(() => {
-    let free = 0;
-    let busy = 0;
-    let unknown = 0;
-
-    for (const f of normalizedFriends) {
-      if (f.status === 'free') free++;
-      else if (f.status === 'busy') busy++;
-      else unknown++;
-    }
-
-    return {
-      total: normalizedFriends.length,
-      free,
-      busy,
-      unknown,
-    };
-  }, [normalizedFriends]);
-
-  // Filter friends based on search query & active status filter
+  // Real-time search filter
   const filteredFriends = useMemo(() => {
-    return normalizedFriends.filter((friend) => {
-      // Status filter
-      if (activeFilter === 'free' && friend.status !== 'free') return false;
-      if (activeFilter === 'busy' && friend.status !== 'busy') return false;
-      if (activeFilter === 'unknown' && friend.status !== 'unknown') return false;
-
-      // Search query
-      if (searchQuery.trim().length > 0) {
-        const query = searchQuery.toLowerCase().trim();
-        const nameMatch = friend.name.toLowerCase().includes(query);
-        const usernameMatch = friend.username?.toLowerCase().includes(query);
-        const groupMatch = friend.groups.some((g) => g.toLowerCase().includes(query));
-        return nameMatch || !!usernameMatch || groupMatch;
-      }
-
-      return true;
-    });
-  }, [normalizedFriends, activeFilter, searchQuery]);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <View style={styles.stateContainer}>
-        <ActivityIndicator size="large" color={COLORS.darkGreen} />
-        <Text style={styles.stateTitle}>Loading Connected Friends</Text>
-        <Text style={styles.stateSubtitle}>Retrieving real-time schedules and availability...</Text>
-      </View>
+    if (!searchQuery.trim()) return normalizedFriends;
+    const query = searchQuery.trim().toLowerCase();
+    return normalizedFriends.filter(
+      (f) =>
+        f.name.toLowerCase().includes(query) ||
+        f.username.toLowerCase().includes(query)
     );
-  }
-
-  // Error state
-  if (isError) {
-    return (
-      <View style={styles.stateContainer}>
-        <UserAvatarSilhouette size={48} color={COLORS.busyIndicatorRed} />
-        <Text style={styles.stateTitle}>Unable to Load Friends</Text>
-        <Text style={styles.stateSubtitle}>{errorMessage}</Text>
-        {onRetry && (
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={onRetry}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Retry loading friends"
-          >
-            <Text style={styles.retryButtonText}>Try Again</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  }
+  }, [normalizedFriends, searchQuery]);
 
   return (
-    <View style={styles.container}>
-      {/* Optional Top Bar with Back Button */}
-      {onBack && (
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Back to friends overview"
-          >
-            <Text style={styles.backArrow}>‹</Text>
-            <Text style={styles.backButtonText}>Friends</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
 
-      {/* Header Info */}
-      <View style={styles.headerContainer}>
-        <View style={styles.headerTitleRow}>
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-          <View style={styles.friendCountBadge}>
-            <Text style={styles.friendCountText}>{counts.total} Connected</Text>
+      {/* 1. Header (Back arrow on left, Centered "Friends" title) */}
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          onPress={onBack}
+          style={styles.backButton}
+          activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Back to Friends"
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M15 19L8 12L15 5"
+              stroke="#132016"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </TouchableOpacity>
+
+        <Text style={styles.topHeaderTitle}>Friends</Text>
+
+        <View style={styles.headerSpacer} />
+      </View>
+      <View style={styles.headerHairline} />
+
+      {/* 2. Scrollable Body Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={COLORS.darkGreen}
+              colors={[COLORS.darkGreen]}
+            />
+          ) : undefined
+        }
+      >
+        <View style={styles.contentContainer}>
+          {/* Section Heading: "My Friends" Pill */}
+          <View style={styles.sectionPill}>
+            <Text style={styles.sectionPillText}>My Friends</Text>
           </View>
-        </View>
-        <Text style={styles.headerSubtitle}>
-          Real-time availability and weekly timetables of your friends
-        </Text>
 
-        {/* Search Bar */}
-        {showSearch && (
+          {/* Search Bar */}
           <View style={styles.searchContainer}>
+            <View style={styles.searchIconWrapper}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Circle cx="11" cy="11" r="7" stroke="#3A4D3B" strokeWidth={2.2} />
+                <Path
+                  d="M16.5 16.5L21 21"
+                  stroke="#3A4D3B"
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </View>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search by name, handle, or group..."
-              placeholderTextColor="#7A8C7F"
+              placeholder="Search your friends"
+              placeholderTextColor="rgba(58, 77, 59, 0.65)"
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -236,241 +203,109 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 onPress={() => setSearchQuery('')}
-                style={styles.clearButton}
+                style={styles.clearSearchButton}
                 accessibilityRole="button"
                 accessibilityLabel="Clear search input"
               >
-                <Text style={styles.clearButtonText}>✕</Text>
+                <Text style={styles.clearSearchText}>✕</Text>
               </TouchableOpacity>
             )}
           </View>
-        )}
 
-        {/* Status Filters */}
-        {showStatusFilters && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterScroll}
-          >
-            <TouchableOpacity
-              style={[
-                styles.filterPill,
-                activeFilter === 'all' && styles.activeFilterPill,
-              ]}
-              onPress={() => setActiveFilter('all')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`All friends, total ${counts.total}`}
-            >
-              <Text
-                style={[
-                  styles.filterPillText,
-                  activeFilter === 'all' && styles.activeFilterPillText,
-                ]}
-              >
-                All ({counts.total})
-              </Text>
-            </TouchableOpacity>
+          {/* Connected Friends Horizontal Rows */}
+          <View style={styles.listContainer}>
+            {filteredFriends.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {searchQuery.trim().length > 0
+                    ? `No friends matching "${searchQuery.trim()}"`
+                    : 'No connected friends found'}
+                </Text>
+              </View>
+            ) : (
+              filteredFriends.map((friend) => {
+                const hasImage = !!friend.avatarUrl && !failedImageIds[friend.id];
 
-            <TouchableOpacity
-              style={[
-                styles.filterPill,
-                activeFilter === 'free' && styles.activeFilterPill,
-              ]}
-              onPress={() => setActiveFilter('free')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`Free friends, total ${counts.free}`}
-            >
-              <View style={[styles.filterDot, styles.freeFilterDot]} />
-              <Text
-                style={[
-                  styles.filterPillText,
-                  activeFilter === 'free' && styles.activeFilterPillText,
-                ]}
-              >
-                Free ({counts.free})
-              </Text>
-            </TouchableOpacity>
+                return (
+                  <View key={friend.id} style={styles.friendRow}>
+                    {/* Left: Avatar + Details */}
+                    <TouchableOpacity
+                      style={styles.friendLeftTouchable}
+                      activeOpacity={0.8}
+                      onPress={() => onSelectFriend?.(friend.scheduleProfile)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${friend.name}, ${friend.username}`}
+                    >
+                      <View style={styles.avatarCircle}>
+                        {hasImage ? (
+                          <Image
+                            source={{ uri: friend.avatarUrl }}
+                            style={styles.avatarImage}
+                            onError={() =>
+                              setFailedImageIds((prev) => ({
+                                ...prev,
+                                [friend.id]: true,
+                              }))
+                            }
+                          />
+                        ) : (
+                          <Text style={styles.avatarInitials}>
+                            {friend.initials}
+                          </Text>
+                        )}
+                      </View>
 
-            <TouchableOpacity
-              style={[
-                styles.filterPill,
-                activeFilter === 'busy' && styles.activeFilterPill,
-              ]}
-              onPress={() => setActiveFilter('busy')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`Occupied friends, total ${counts.busy}`}
-            >
-              <View style={[styles.filterDot, styles.busyFilterDot]} />
-              <Text
-                style={[
-                  styles.filterPillText,
-                  activeFilter === 'busy' && styles.activeFilterPillText,
-                ]}
-              >
-                Occupied ({counts.busy})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterPill,
-                activeFilter === 'unknown' && styles.activeFilterPill,
-              ]}
-              onPress={() => setActiveFilter('unknown')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`Unknown availability, total ${counts.unknown}`}
-            >
-              <View style={[styles.filterDot, styles.unknownFilterDot]} />
-              <Text
-                style={[
-                  styles.filterPillText,
-                  activeFilter === 'unknown' && styles.activeFilterPillText,
-                ]}
-              >
-                Unknown ({counts.unknown})
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
-      </View>
-
-      {/* Friends List or Empty States */}
-      <View style={styles.listContent}>
-        {filteredFriends.length === 0 ? (
-          <View style={styles.stateContainer}>
-            <UserAvatarSilhouette size={44} color="#758A78" />
-            <Text style={styles.stateTitle}>
-              {searchQuery.trim().length > 0
-                ? 'No matching friends found'
-                : 'No friends in this status'}
-            </Text>
-            <Text style={styles.stateSubtitle}>
-              {searchQuery.trim().length > 0
-                ? `No friends match "${searchQuery}". Please check the spelling or clear the filter.`
-                : 'None of your connected friends are currently in this availability status.'}
-            </Text>
-            {searchQuery.trim().length > 0 && (
-              <TouchableOpacity
-                style={styles.clearSearchButton}
-                onPress={() => setSearchQuery('')}
-                accessibilityRole="button"
-                accessibilityLabel="Clear search query"
-              >
-                <Text style={styles.clearSearchButtonText}>Clear Search</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          filteredFriends.map((friend) => {
-            const hasImage = !!friend.avatarUrl && !failedImageIds[friend.id];
-            const isFree = friend.status === 'free';
-            const isBusy = friend.status === 'busy';
-            const isUnknown = friend.status === 'unknown';
-
-            return (
-              <TouchableOpacity
-                key={friend.id}
-                style={styles.friendItemCard}
-                onPress={() => onSelectFriend?.(friend.scheduleProfile)}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={`${friend.name}, ${friend.status} availability`}
-              >
-                {/* Status Accent Stripe */}
-                <View
-                  style={[
-                    styles.accentStripe,
-                    isFree && styles.freeAccentStripe,
-                    isBusy && styles.busyAccentStripe,
-                    isUnknown && styles.unknownAccentStripe,
-                  ]}
-                />
-
-                <View style={styles.cardContent}>
-                  {/* Avatar: Image -> Initials Fallback */}
-                  <View style={styles.avatarWrapper}>
-                    {hasImage ? (
-                      <Image
-                        source={{ uri: friend.avatarUrl }}
-                        style={styles.avatarImage}
-                        onError={() =>
-                          setFailedImageIds((prev) => ({
-                            ...prev,
-                            [friend.id]: true,
-                          }))
-                        }
-                      />
-                    ) : (
-                      <View style={styles.initialsAvatar}>
-                        <Text style={styles.initialsText}>
-                          {friend.initials.slice(0, 2).toUpperCase()}
+                      <View style={styles.friendInfo}>
+                        <Text style={styles.friendName} numberOfLines={1}>
+                          {friend.name}
+                        </Text>
+                        <Text style={styles.friendHandle} numberOfLines={1}>
+                          {friend.username}
+                        </Text>
+                        <Text style={styles.availabilitySummary} numberOfLines={1}>
+                          {friend.availabilitySummary}
                         </Text>
                       </View>
-                    )}
-                  </View>
+                    </TouchableOpacity>
 
-                  {/* Profile & Availability Info */}
-                  <View style={styles.infoWrapper}>
-                    <Text style={styles.friendName} numberOfLines={1}>
-                      {friend.name}
-                    </Text>
-                    {friend.username && (
-                      <Text style={styles.friendUsername} numberOfLines={1}>
-                        {friend.username}
-                      </Text>
-                    )}
-                    <Text style={styles.availabilityText} numberOfLines={1}>
-                      {friend.availabilitySummary}
-                    </Text>
+                    {/* Right: Actions ("Schedule" & "Remove") */}
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity
+                        style={styles.scheduleButton}
+                        onPress={() => onSelectFriend?.(friend.scheduleProfile)}
+                        activeOpacity={0.75}
+                        accessibilityRole="button"
+                        accessibilityLabel={`View ${friend.name}'s schedule`}
+                      >
+                        <Text style={styles.scheduleButtonText}>Schedule</Text>
+                      </TouchableOpacity>
 
-                    {/* Badge */}
-                    <View style={styles.badgeRow}>
-                      {isFree && (
-                        <View style={[styles.badge, styles.vacantBadge]}>
-                          <Text style={styles.vacantBadgeText}>Vacant</Text>
-                        </View>
-                      )}
-                      {isBusy && (
-                        <View style={[styles.badge, styles.busyBadge]}>
-                          <Text style={styles.busyBadgeText}>BUSY</Text>
-                        </View>
-                      )}
-                      {isUnknown && (
-                        <View style={[styles.badge, styles.unknownBadge]}>
-                          <Text style={styles.unknownBadgeText}>
-                            {friend.scheduleProfile?.isPrivate
-                              ? 'PRIVATE'
-                              : 'UNKNOWN'}
-                          </Text>
-                        </View>
-                      )}
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => onRemoveFriend?.(friend.originalItem)}
+                        activeOpacity={0.75}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${friend.name}`}
+                      >
+                        <Text style={styles.removeButtonText}>Remove</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
+                );
+              })
+            )}
+          </View>
+        </View>
+      </ScrollView>
 
-                  {/* Action Button: View Schedule */}
-                  <View style={styles.rightActionWrapper}>
-                    <TouchableOpacity
-                      style={styles.scheduleButton}
-                      onPress={() => onSelectFriend?.(friend.scheduleProfile)}
-                      activeOpacity={0.75}
-                      accessibilityRole="button"
-                      accessibilityLabel={`View ${friend.name}'s schedule`}
-                    >
-                      <Text style={styles.scheduleButtonText}>Schedule</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
-      </View>
-    </View>
+      {/* 3. Existing Bottom Navigation Bar (Friends tab selected) */}
+      <BottomNavBar
+        activeTab="friends"
+        onTabChange={(tab) => {
+          onNavigateTab?.(tab);
+        }}
+        notificationBadgeCount={0}
+      />
+    </SafeAreaView>
   );
 };
-

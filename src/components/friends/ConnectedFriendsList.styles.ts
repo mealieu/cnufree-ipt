@@ -1,271 +1,159 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
 
 export const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: COLORS.cream,
+    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) : 0,
   },
-  topBar: {
+  topHeader: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.cream,
   },
   backButton: {
-    flexDirection: 'row',
+    padding: 6,
+    borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
-    paddingVertical: 6,
-    paddingRight: 6,
   },
-  backArrow: {
+  topHeaderTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 22,
-    color: COLORS.friendsOliveText,
-    marginRight: 4,
-    lineHeight: 24,
-  },
-  backButtonText: {
-    fontFamily: FONTS.medium,
-    fontSize: 14.5,
-    color: COLORS.friendsOliveText,
-  },
-  headerContainer: {
-    paddingHorizontal: 18,
-    marginBottom: 12,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  headerTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 20,
-    color: COLORS.friendsOliveText,
-    letterSpacing: -0.2,
-  },
-  friendCountBadge: {
-    backgroundColor: 'rgba(26, 90, 49, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  friendCountText: {
-    fontFamily: FONTS.bold,
-    fontSize: 12.5,
+    fontSize: 24,
     color: COLORS.darkGreen,
+    letterSpacing: -0.3,
   },
-  headerSubtitle: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: COLORS.friendsOliveText,
-    marginBottom: 12,
-    opacity: 0.85,
+  headerSpacer: {
+    width: 36,
+  },
+  headerHairline: {
+    height: 1,
+    backgroundColor: 'rgba(92, 112, 87, 0.22)',
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.cream,
+  },
+  scrollContent: {
+    paddingBottom: 95,
+  },
+  contentContainer: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    paddingHorizontal: 22,
+    paddingTop: 16,
+  },
+  sectionPill: {
+    backgroundColor: COLORS.friendsGroupPillBg,
+    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 22,
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+  },
+  sectionPillText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    color: '#FAF8EF',
+    letterSpacing: 0.1,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(35, 50, 38, 0.15)',
+    backgroundColor: 'rgba(91, 105, 85, 0.15)',
+    borderRadius: 10,
+    height: 42,
     paddingHorizontal: 12,
-    height: 44,
-    marginBottom: 12,
+    marginBottom: 16,
+  },
+  searchIconWrapper: {
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
     fontFamily: FONTS.regular,
     fontSize: 14,
     color: '#0F1711',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
-  clearButton: {
-    padding: 6,
+  clearSearchButton: {
+    padding: 4,
   },
-  clearButtonText: {
+  clearSearchText: {
     fontFamily: FONTS.bold,
     fontSize: 13,
-    color: COLORS.textSubtle,
+    color: COLORS.friendsOliveText,
   },
-  filterScroll: {
-    flexDirection: 'row',
-    marginBottom: 10,
+  listContainer: {
+    marginTop: 4,
   },
-  filterPill: {
-    paddingVertical: 6,
-    paddingHorizontal: 13,
-    borderRadius: 18,
-    backgroundColor: '#E4EAD9',
-    borderWidth: 1,
-    borderColor: 'rgba(35, 50, 38, 0.15)',
-    marginRight: 8,
+  friendRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(91, 105, 85, 0.15)',
   },
-  activeFilterPill: {
-    backgroundColor: COLORS.filterActiveBg,
-    borderColor: COLORS.filterActiveBorder,
-  },
-  filterPillText: {
-    fontFamily: FONTS.medium,
-    fontSize: 12.5,
-    color: COLORS.filterInactiveText,
-  },
-  activeFilterPillText: {
-    fontFamily: FONTS.bold,
-    color: '#FFFFFF',
-  },
-  filterDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    marginRight: 6,
-  },
-  freeFilterDot: {
-    backgroundColor: COLORS.freeIndicatorGreen,
-  },
-  busyFilterDot: {
-    backgroundColor: COLORS.busyIndicatorRed,
-    borderRadius: 2,
-  },
-  unknownFilterDot: {
-    backgroundColor: '#7A8C7F',
-  },
-  listContent: {
-    paddingHorizontal: 18,
-    paddingBottom: 24,
-  },
-  friendItemCard: {
-    backgroundColor: COLORS.sageCardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.sageCardBorder,
-    marginBottom: 10,
-    overflow: 'hidden',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  accentStripe: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 6,
-    zIndex: 2,
-  },
-  freeAccentStripe: {
-    backgroundColor: '#1E482C',
-  },
-  busyAccentStripe: {
-    backgroundColor: '#E57373',
-  },
-  unknownAccentStripe: {
-    backgroundColor: '#7A8C7F',
-  },
-  cardContent: {
+  friendLeftTouchable: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingLeft: 16,
-    paddingRight: 14,
+    flex: 1,
+    marginRight: 10,
   },
-  avatarWrapper: {
-    marginRight: 12,
-  },
-  avatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  avatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.friendsAvatarBg,
     borderWidth: 1.5,
-    borderColor: COLORS.avatarCircleBorder,
-  },
-  initialsAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.avatarCircleBg,
-    borderWidth: 1.5,
-    borderColor: COLORS.avatarCircleBorder,
+    borderColor: COLORS.friendsAvatarBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  initialsText: {
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarInitials: {
     fontFamily: FONTS.bold,
-    fontSize: 16,
-    color: COLORS.darkGreen,
+    fontSize: 18,
+    color: '#2B3D2D',
   },
-  infoWrapper: {
+  friendInfo: {
+    marginLeft: 14,
     flex: 1,
     justifyContent: 'center',
   },
   friendName: {
     fontFamily: FONTS.bold,
-    fontSize: 15,
-    color: '#0F1812',
-    marginBottom: 2,
+    fontSize: 16,
+    color: '#0F1711',
+    letterSpacing: -0.2,
   },
-  friendUsername: {
+  friendHandle: {
     fontFamily: FONTS.regular,
-    fontSize: 12.5,
-    color: '#213024',
-    marginBottom: 4,
+    fontSize: 13.5,
+    color: '#3A4D3B',
+    marginTop: 1,
   },
-  availabilityText: {
+  availabilitySummary: {
     fontFamily: FONTS.medium,
     fontSize: 12,
-    color: '#1A291E',
-    marginBottom: 6,
+    color: '#526654',
+    marginTop: 2,
   },
-  badgeRow: {
+  actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  badge: {
-    borderRadius: 10,
-    paddingVertical: 2,
-    paddingHorizontal: 10,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-  },
-  vacantBadge: {
-    backgroundColor: COLORS.vacantBadgeBg,
-    borderColor: COLORS.vacantBadgeBorder,
-  },
-  vacantBadgeText: {
-    fontFamily: FONTS.bold,
-    fontSize: 10.5,
-    color: COLORS.vacantBadgeText,
-  },
-  busyBadge: {
-    backgroundColor: COLORS.busyBadgeBg,
-    borderColor: COLORS.busyBadgeBorder,
-  },
-  busyBadgeText: {
-    fontFamily: FONTS.bold,
-    fontSize: 10.5,
-    color: COLORS.busyBadgeText,
-  },
-  unknownBadge: {
-    backgroundColor: '#E2E8DE',
-    borderColor: '#97A89B',
-  },
-  unknownBadgeText: {
-    fontFamily: FONTS.bold,
-    fontSize: 10.5,
-    color: '#3B4E3E',
-  },
-  rightActionWrapper: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    paddingLeft: 8,
+    gap: 8,
   },
   scheduleButton: {
     backgroundColor: COLORS.friendsScheduleBtnBg,
@@ -273,7 +161,7 @@ export const styles = StyleSheet.create({
     borderColor: COLORS.friendsScheduleBtnBorder,
     borderRadius: 4,
     paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -282,55 +170,30 @@ export const styles = StyleSheet.create({
     fontSize: 12.5,
     color: '#0F1711',
   },
-  stateContainer: {
-    backgroundColor: 'rgba(235, 240, 226, 0.6)',
-    borderRadius: 16,
+  removeButton: {
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(35, 50, 38, 0.15)',
-    paddingVertical: 32,
-    paddingHorizontal: 20,
+    borderColor: '#8A9E8B',
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 18,
-    marginTop: 12,
   },
-  stateTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 16,
-    color: COLORS.textDark,
-    marginTop: 12,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  stateSubtitle: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  retryButton: {
-    marginTop: 16,
-    backgroundColor: COLORS.darkGreen,
-    paddingVertical: 9,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-  },
-  retryButtonText: {
-    fontFamily: FONTS.bold,
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  clearSearchButton: {
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  clearSearchButtonText: {
+  removeButtonText: {
     fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: COLORS.darkGreen,
-    textDecorationLine: 'underline',
+    fontSize: 12.5,
+    color: '#3A4D3B',
+  },
+  emptyContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: COLORS.friendsOliveText,
+    textAlign: 'center',
   },
 });
-
