@@ -36,6 +36,7 @@ import { ConnectedFriendsList } from '../components/friends/ConnectedFriendsList
 import { PendingRequestsSection } from '../components/friends/PendingRequestsSection';
 import { FriendGroupsSection } from '../components/friends/FriendGroupsSection';
 import { CreateFriendGroupModal } from '../components/friends/CreateFriendGroupModal';
+import { CreateFriendGroupScreen } from './CreateFriendGroupScreen';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
 // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
@@ -305,6 +306,22 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
     );
   }
 
+  // If creating friend group (FS-07)
+  if (isCreateGroupModalVisible) {
+    return (
+      <CreateFriendGroupScreen
+        friends={connectedFriends}
+        existingGroups={friendGroups}
+        onBack={() => setIsCreateGroupModalVisible(false)}
+        onNavigateTab={(tab) => {
+          setIsCreateGroupModalVisible(false);
+          onNavigateTab?.(tab);
+        }}
+        onCreateGroup={handleCreateGroup}
+      />
+    );
+  }
+
   // If viewing an individual connected friend's schedule
   if (selectedScheduleFriend) {
     return (
@@ -487,15 +504,6 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
           onNavigateTab?.(tab);
         }}
         notificationBadgeCount={0}
-      />
-
-      {/* 7. Create Friend Group Modal (FS-07) */}
-      <CreateFriendGroupModal
-        visible={isCreateGroupModalVisible}
-        onClose={() => setIsCreateGroupModalVisible(false)}
-        friends={connectedFriends}
-        existingGroups={friendGroups}
-        onCreateGroup={handleCreateGroup}
       />
     </SafeAreaView>
   );
