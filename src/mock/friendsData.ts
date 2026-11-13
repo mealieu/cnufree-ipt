@@ -5,7 +5,7 @@ import {
   DiscoverableUser,
 } from '../types/friends';
 import { MARIA_WEEKLY_SCHEDULE } from './dashboardData';
-
+import { FriendGroup } from '../types/friends';
 /**
  * Connected Friends displayed on the Friends Main Screen (FS-01, Page 1 of UI Guide)
  * Default count is 2 ("Connected Friends • 2"):
@@ -570,3 +570,26 @@ export function cancelFriendRequest(user: DiscoverableUser): void {
 export function getSentRequestsCount(): number {
   return INITIAL_SENT_REQUESTS.length;
 }
+
+
+export const MOCK_FRIEND_GROUPS: FriendGroup[] = [
+  {
+    id: 'g1',
+    name: 'SHS Friends',
+    members: [
+      { id: 'm1', fullName: 'Nhaka Kai P. Agod', username: '@kai_pagod' },
+      { id: 'm2', fullName: 'Aque Naman M. Una', username: '@naman.aque' },
+      { id: 'm3', fullName: 'Lalah Mohb', username: '@Lalah' },
+    ],
+  },
+  {
+    id: 'g2',
+    name: 'IT Pwends',
+    members: [
+      { id: 'm4', fullName: 'Bernadette Buenvenida', username: '@berna' },
+      { id: 'm5', fullName: 'Andrei Manrique', username: '@andrei' },
+    ],
+  },
+
+];
+

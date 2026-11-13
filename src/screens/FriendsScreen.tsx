@@ -41,6 +41,9 @@ import { FriendScheduleScreen } from './FriendScheduleScreen';
 // TODO: [TEMP HARNESS FOR FS-04 - REMOVE ON MERGE]
 import { ReceivedFriendRequestsScreen } from './ReceivedFriendRequestsScreen';
 import { FriendSearchScreen } from './FriendSearchScreen';
+import { FriendGroupDetailsScreen } from './FriendGroupDetailsScreen';
+import { MOCK_FRIEND_GROUPS } from '../mock/friendsData';
+import { FriendGroup } from '../types/friends';
 
 
 export const FriendsScreen: React.FC<FriendsScreenProps> = ({
@@ -56,6 +59,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<FriendGroup | null>(null);
 
   // Section Interactive States
   const [showAllFriends, setShowAllFriends] = useState<boolean>(false);
@@ -175,6 +179,12 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
         onOpenManageGroups(group);
         return;
       }
+
+      const detailedGroup = MOCK_FRIEND_GROUPS.find(g => g.name === group.name);
+      if (detailedGroup) {
+        setSelectedGroup(detailedGroup);
+      }
+
       setSelectedGroupId((prev) => (prev === group.id ? null : group.id));
     },
     [onOpenManageGroups, isManagingGroups]
@@ -372,6 +382,15 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
             setSelectedScheduleFriend(friendSchedule);
           }
         }}
+      />
+    );
+  }
+
+  if (selectedGroup) {
+    return (
+      <FriendGroupDetailsScreen 
+        group={selectedGroup} 
+        onBack={() => setSelectedGroup(null)}
       />
     );
   }
