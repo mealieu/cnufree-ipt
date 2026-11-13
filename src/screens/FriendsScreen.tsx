@@ -300,6 +300,9 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
           setIsViewingAllConnectedList(false);
           onNavigateTab?.(tab);
         }}
+        notificationBadgeCount={
+          receivedRequests.filter((r) => r.status === 'pending').length
+        }
         refreshing={refreshing}
         onRefresh={handleRefresh}
       />

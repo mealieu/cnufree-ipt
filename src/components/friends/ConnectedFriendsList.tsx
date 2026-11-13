@@ -26,6 +26,8 @@ export interface ConnectedFriendsListProps {
   onRemoveFriend?: (friend: ConnectedFriend | FriendAvailability) => void;
   refreshing?: boolean;
   onRefresh?: () => void;
+  notificationBadgeCount?: number;
+  showBottomNavBar?: boolean;
 }
 
 export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
@@ -36,6 +38,8 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
   onRemoveFriend,
   refreshing = false,
   onRefresh,
+  notificationBadgeCount = 0,
+  showBottomNavBar = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [failedImageIds, setFailedImageIds] = useState<Record<string, boolean>>({});
@@ -299,13 +303,15 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
       </ScrollView>
 
       {/* 3. Existing Bottom Navigation Bar (Friends tab selected) */}
-      <BottomNavBar
-        activeTab="friends"
-        onTabChange={(tab) => {
-          onNavigateTab?.(tab);
-        }}
-        notificationBadgeCount={0}
-      />
+      {showBottomNavBar && (
+        <BottomNavBar
+          activeTab="friends"
+          onTabChange={(tab) => {
+            onNavigateTab?.(tab);
+          }}
+          notificationBadgeCount={notificationBadgeCount}
+        />
+      )}
     </SafeAreaView>
   );
 };
