@@ -196,3 +196,15 @@ export interface FriendSearchNoResultsProps {
   query: string;
   onClearQuery: () => void;
 }
+
+export interface Friend {
+  id: string;
+  fullName: string;
+  username: string;
+}
+
+export interface FriendGroup {
+  id: string;
+  name: string;
+  members: Friend[];
+}
