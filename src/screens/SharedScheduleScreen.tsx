@@ -36,6 +36,7 @@ import { SharedViewModeToggle } from '../components/sharedSchedule/SharedViewMod
 import { SharedGroupFilter } from '../components/sharedSchedule/SharedGroupFilter';
 import { SharedFreeWindowBanner } from '../components/sharedSchedule/SharedFreeWindowBanner';
 import { DailySharedCalendar } from '../components/sharedSchedule/DailySharedCalendar';
+import { FriendGroupSelectorModal } from '../components/sharedSchedule/FriendGroupSelectorModal';
 
 export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
   onNavigateTab,
@@ -50,6 +51,7 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
 
   // 3. Friend Group State
   const [selectedGroupId, setSelectedGroupId] = useState<string>(initialGroupId);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState<boolean>(false);
 
   // 4. Free Window Highlight Toggle
   const [highlightFreeWindows, setHighlightFreeWindows] = useState<boolean>(true);
@@ -219,10 +221,11 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
                 groups={SHARED_FRIEND_GROUPS}
                 selectedGroupId={selectedGroupId}
                 onSelectGroup={(g) => setSelectedGroupId(g.id)}
+                onOpenSelector={() => setIsGroupModalOpen(true)}
               />
 
               {/* ================= 5. OVERLAPPING FREE WINDOW BANNER ================= */}
-              {allFreeWindows.length > 0 && (
+              {allFreeWindows.length > 0 && activeGroup.members.length > 0 && (
                 <SharedFreeWindowBanner
                   freeWindows={allFreeWindows}
                   onPressBanner={() =>
@@ -395,6 +398,15 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
           onNavigateTab?.(tab);
         }}
         notificationBadgeCount={0}
+      />
+
+      {/* ================= 10. FRIEND GROUP SELECTOR BOTTOM SHEET (SS-02) ================= */}
+      <FriendGroupSelectorModal
+        visible={isGroupModalOpen}
+        onClose={() => setIsGroupModalOpen(false)}
+        groups={SHARED_FRIEND_GROUPS}
+        selectedGroupId={selectedGroupId}
+        onSelectGroup={(g) => setSelectedGroupId(g.id)}
       />
     </SafeAreaView>
   );

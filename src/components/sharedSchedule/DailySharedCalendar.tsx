@@ -165,8 +165,32 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
         </View>
       </View>
 
-      {/* ================= 2. EMPTY STATE (IF NO CLASSES) ================= */}
-      {totalClassesToday === 0 ? (
+      {/* ================= 2. EMPTY STATE (IF NO FRIENDS OR NO CLASSES) ================= */}
+      {friends.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+              <Circle cx="9" cy="8" r="3.5" stroke="#2B5E38" strokeWidth={1.8} />
+              <Path
+                d="M2.5 19C2.5 15.5 5.5 13.5 9 13.5C12.5 13.5 15.5 15.5 15.5 19"
+                stroke="#2B5E38"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+              />
+              <Path
+                d="M17 11V17M14 14H20"
+                stroke="#2B5E38"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </View>
+          <Text style={styles.emptyStateTitle}>Empty Friend Group</Text>
+          <Text style={styles.emptyStateSub}>
+            No friends have been added to this group yet. Select another group to view shared schedules.
+          </Text>
+        </View>
+      ) : totalClassesToday === 0 ? (
         <View style={styles.emptyStateContainer}>
           <View style={styles.emptyIconCircle}>
             <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">

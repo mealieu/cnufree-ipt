@@ -409,43 +409,93 @@ export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
       [OCT_25]: [],
     },
   },
+  {
+    id: 'cf-carlos',
+    name: 'Carlos Mendoza',
+    nickname: 'Carlos',
+    initials: 'CM',
+    hasMissingSchedule: true,
+    scheduleByDate: {
+      [OCT_19]: [],
+      [OCT_20]: [],
+      [OCT_21]: [],
+      [OCT_22]: [],
+      [OCT_23]: [],
+      [OCT_24]: [],
+      [OCT_25]: [],
+    },
+  },
+];
+
+// 6 Members for "All Friends" (2 schedules unavailable: Chloe is private, Carlos is missing)
+export const ALL_FRIENDS_MEMBERS: SharedCalendarFriend[] = [
+  PROJECT_TEAM_MEMBERS[0], // Ava
+  PROJECT_TEAM_MEMBERS[1], // Ben
+  PROJECT_TEAM_MEMBERS[2], // Chloe (Private)
+  PROJECT_TEAM_MEMBERS[3], // Dev
+  IT_PWENDS_MEMBERS[0],    // Kai
+  IT_PWENDS_MEMBERS[3],    // Carlos (Missing schedule)
+];
+
+// 3 Members for "Close Friends"
+export const CLOSE_FRIENDS_MEMBERS: SharedCalendarFriend[] = [
+  PROJECT_TEAM_MEMBERS[0], // Ava
+  PROJECT_TEAM_MEMBERS[1], // Ben
+  PROJECT_TEAM_MEMBERS[3], // Dev
+];
+
+// 4 Members for "Classmates" (1 missing: Carlos, 1 unavailable: Chloe/Aque)
+export const CLASSMATES_MEMBERS: SharedCalendarFriend[] = [
+  IT_PWENDS_MEMBERS[0],    // Kai
+  IT_PWENDS_MEMBERS[1],    // Aque (marked private/busy)
+  IT_PWENDS_MEMBERS[2],    // Berna
+  IT_PWENDS_MEMBERS[3],    // Carlos (missing schedule)
 ];
 
 export const SHARED_FRIEND_GROUPS: SharedFriendGroup[] = [
+  {
+    id: 'grp-all-friends',
+    name: 'All Friends',
+    memberCount: 6,
+    members: ALL_FRIENDS_MEMBERS,
+    statusSummary: '6 people · 2 schedules unavailable',
+    unavailableCount: 2,
+    description: 'All connected friends schedule',
+  },
   {
     id: 'grp-project-team',
     name: 'Project Team',
     memberCount: 4,
     members: PROJECT_TEAM_MEMBERS,
+    statusSummary: '4 people · All schedules available',
     description: 'Capstone / IPT project team members',
   },
   {
-    id: 'grp-it-pwends',
-    name: 'IT Pwends',
+    id: 'grp-close-friends',
+    name: 'Close Friends',
     memberCount: 3,
-    members: IT_PWENDS_MEMBERS,
-    description: 'IT classmates & study group',
+    members: CLOSE_FRIENDS_MEMBERS,
+    statusSummary: '3 people · All schedules available',
+    description: 'Close inner-circle friends',
   },
   {
-    id: 'grp-all-friends',
-    name: 'All Friends',
-    memberCount: 7,
-    members: [...PROJECT_TEAM_MEMBERS, ...IT_PWENDS_MEMBERS],
-    description: 'All connected friends schedule',
+    id: 'grp-classmates',
+    name: 'Classmates',
+    memberCount: 4,
+    members: CLASSMATES_MEMBERS,
+    statusSummary: '4 people · 1 missing · 1 unavailable',
+    missingCount: 1,
+    unavailableCount: 1,
+    description: 'College classmates & study group',
   },
   {
-    id: 'grp-shs-friends',
-    name: 'SHS Friends',
-    memberCount: 2,
-    members: [IT_PWENDS_MEMBERS[0], IT_PWENDS_MEMBERS[1]],
-    description: 'High school friends group',
-  },
-  {
-    id: 'grp-dyd-squad',
-    name: 'DYD Squad',
-    memberCount: 1,
-    members: [IT_PWENDS_MEMBERS[1]],
-    description: 'Dorm & dining squad',
+    id: 'grp-study-abroad',
+    name: 'Study Abroad',
+    memberCount: 0,
+    members: [],
+    statusSummary: '0 people · Empty group',
+    isEmpty: true,
+    description: 'International exchange study group',
   },
 ];
 
