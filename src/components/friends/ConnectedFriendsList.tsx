@@ -8,6 +8,7 @@ import {
   Image,
   SafeAreaView,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -43,6 +44,9 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [failedImageIds, setFailedImageIds] = useState<Record<string, boolean>>({});
+
+  const [friendToRemove, setFriendToRemove] = useState<any | null>(null);
+  const getFirstName = (fullName: string) => fullName.split(' ')[0];
 
   // Normalize friends and compute availability summaries
   const normalizedFriends = useMemo(() => {
@@ -286,7 +290,7 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
 
                       <TouchableOpacity
                         style={styles.removeButton}
-                        onPress={() => onRemoveFriend?.(friend.originalItem)}
+                        onPress={() => setFriendToRemove(friend)}
                         activeOpacity={0.75}
                         accessibilityRole="button"
                         accessibilityLabel={`Remove ${friend.name}`}
@@ -301,6 +305,39 @@ export const ConnectedFriendsList: React.FC<ConnectedFriendsListProps> = ({
           </View>
         </View>
       </ScrollView>
+
+      {/* REMOVE FRIEND MODAL */}
+      <Modal visible={!!friendToRemove} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Remove {friendToRemove ? getFirstName(friendToRemove.name) : ''} as a friend?
+            </Text>
+            <Text style={styles.modalBody}>
+              You and {friendToRemove ? getFirstName(friendToRemove.name) : ''} will lose access to each other's shared schedules. {friendToRemove ? getFirstName(friendToRemove.name) : ''} will be removed from all your friend groups. You can still find each other and send a new friend request.
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.modalPrimaryBtn} 
+              onPress={() => {
+                if (friendToRemove) {
+                  onRemoveFriend?.(friendToRemove.originalItem);
+                }
+                setFriendToRemove(null);
+              }}
+            >
+              <Text style={styles.modalPrimaryBtnText}>Remove friend</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.modalSecondaryBtn} 
+              onPress={() => setFriendToRemove(null)}
+            >
+              <Text style={styles.modalSecondaryBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* 3. Existing Bottom Navigation Bar (Friends tab selected) */}
       {showBottomNavBar && (

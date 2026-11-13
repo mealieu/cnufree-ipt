@@ -196,4 +196,56 @@ export const styles = StyleSheet.create({
     color: COLORS.friendsOliveText,
     textAlign: 'center',
   },
+
+  // --- MODAL STYLES ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#9CB495',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 380,
+  },
+  modalTitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 20,
+    color: '#000000',
+    marginBottom: 12,
+  },
+  modalBody: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 14,
+    color: '#1C1F1B',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalPrimaryBtn: {
+    backgroundColor: '#43543D',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalPrimaryBtnText: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  modalSecondaryBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalSecondaryBtnText: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 15,
+    color: '#000000',
+  },
 });
