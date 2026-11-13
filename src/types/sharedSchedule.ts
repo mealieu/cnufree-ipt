@@ -37,7 +37,19 @@ export interface SharedFriendGroup {
   memberCount: number;
   members: SharedCalendarFriend[];
   description?: string;
+  statusSummary?: string; // e.g. "6 people · 2 schedules unavailable", "4 people · All schedules available"
+  unavailableCount?: number;
+  missingCount?: number;
+  isEmpty?: boolean;
   isCustom?: boolean;
+}
+
+export interface FriendGroupSelectorModalProps {
+  visible: boolean;
+  onClose: () => void;
+  groups: SharedFriendGroup[];
+  selectedGroupId: string;
+  onSelectGroup: (group: SharedFriendGroup) => void;
 }
 
 export interface OverlappingFreeWindow {
@@ -76,6 +88,7 @@ export interface SharedGroupFilterProps {
   groups: SharedFriendGroup[];
   selectedGroupId: string;
   onSelectGroup: (group: SharedFriendGroup) => void;
+  onOpenSelector?: () => void;
   onManageGroups?: () => void; // SS-02 architectural context
 }
 
