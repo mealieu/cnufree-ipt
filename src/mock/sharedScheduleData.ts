@@ -3,6 +3,10 @@ import {
   SharedFriendGroup,
   OverlappingFreeWindow,
   SharedScheduleItem,
+  WeekDayInfo,
+  TimelineBarSegment,
+  DayWeeklyAvailabilityRow,
+  AvailabilitySegmentStatus,
 } from '../types/sharedSchedule';
 
 // Reference date for the Figma mockup: Monday, October 19, 2026
@@ -20,8 +24,8 @@ const OCT_20 = '2026-10-20';
 const OCT_21 = '2026-10-21';
 const OCT_22 = '2026-10-22';
 const OCT_23 = '2026-10-23';
-const OCT_24 = '2026-10-24'; // Saturday (Empty state)
-const OCT_25 = '2026-10-25'; // Sunday (Empty state)
+const OCT_24 = '2026-10-24'; // Saturday (Empty state in Day view)
+const OCT_25 = '2026-10-25'; // Sunday (Empty state in Day view)
 
 // 1. PROJECT TEAM (Faithfully reproducing the UI Screenshot)
 export const AVA_SCHEDULE_OCT_19: SharedScheduleItem[] = [
@@ -33,7 +37,7 @@ export const AVA_SCHEDULE_OCT_19: SharedScheduleItem[] = [
     timeRange: '9:00–10:30',
     startHour: 9.0,
     endHour: 10.5,
-    room: 'Hall B 102',
+    room: 'Hall B · Room 204',
     isBusy: true,
     colorVariant: 'forest',
   },
@@ -45,7 +49,7 @@ export const AVA_SCHEDULE_OCT_19: SharedScheduleItem[] = [
     timeRange: '2:00–3:30',
     startHour: 14.0,
     endHour: 15.5,
-    room: 'Art Bldg 204',
+    room: 'Design Lab',
     isBusy: true,
     colorVariant: 'forest',
   },
@@ -132,16 +136,17 @@ export const DEV_SCHEDULE_OCT_19: SharedScheduleItem[] = [
   },
 ];
 
-// Tuesday Oct 20 schedules for variety
+// Tuesday Oct 20 schedules (3 common free windows: 8:00-8:30, 12:30-1:30, 4:30-6:00)
 const AVA_OCT_20: SharedScheduleItem[] = [
   {
     id: 'ava-20-1',
     title: 'Design Tech',
     startTime: '10:00 AM',
-    endTime: '12:00 PM',
-    timeRange: '10:00–12:00',
+    endTime: '12:30 PM',
+    timeRange: '10:00–12:30',
     startHour: 10.0,
-    endHour: 12.0,
+    endHour: 12.5,
+    room: 'Design Studio 3',
     isBusy: true,
     colorVariant: 'forest',
   },
@@ -153,6 +158,7 @@ const AVA_OCT_20: SharedScheduleItem[] = [
     timeRange: '3:00–4:30',
     startHour: 15.0,
     endHour: 16.5,
+    room: 'Collab Hub',
     isBusy: true,
     colorVariant: 'mint',
   },
@@ -167,17 +173,19 @@ const BEN_OCT_20: SharedScheduleItem[] = [
     timeRange: '9:00–11:00',
     startHour: 9.0,
     endHour: 11.0,
+    room: 'Math 202',
     isBusy: true,
     colorVariant: 'teal',
   },
   {
     id: 'ben-20-2',
     title: 'Library Study',
-    startTime: '1:00 PM',
-    endTime: '2:30 PM',
-    timeRange: '1:00–2:30',
-    startHour: 13.0,
-    endHour: 14.5,
+    startTime: '1:30 PM',
+    endTime: '3:00 PM',
+    timeRange: '1:30–3:00',
+    startHour: 13.5,
+    endHour: 15.0,
+    room: 'Main Library',
     isBusy: true,
     colorVariant: 'teal',
   },
@@ -187,11 +195,11 @@ const CHLOE_OCT_20: SharedScheduleItem[] = [
   {
     id: 'chloe-20-1',
     title: 'Busy',
-    startTime: '11:00 AM',
-    endTime: '1:00 PM',
-    timeRange: '11:00–1:00',
-    startHour: 11.0,
-    endHour: 13.0,
+    startTime: '10:30 AM',
+    endTime: '12:30 PM',
+    timeRange: '10:30–12:30',
+    startHour: 10.5,
+    endHour: 12.5,
     isBusy: true,
     isPrivate: true,
     colorVariant: 'busy',
@@ -207,6 +215,7 @@ const DEV_OCT_20: SharedScheduleItem[] = [
     timeRange: '8:30–10:30',
     startHour: 8.5,
     endHour: 10.5,
+    room: 'CS 105',
     isBusy: true,
     colorVariant: 'olive',
   },
@@ -214,10 +223,278 @@ const DEV_OCT_20: SharedScheduleItem[] = [
     id: 'dev-20-2',
     title: 'Code Review',
     startTime: '1:30 PM',
-    endTime: '3:00 PM',
-    timeRange: '1:30–3:00',
+    endTime: '3:30 PM',
+    timeRange: '1:30–3:30',
     startHour: 13.5,
+    endHour: 15.5,
+    room: 'Lab 4B',
+    isBusy: true,
+    colorVariant: 'olive',
+  },
+];
+
+// Wednesday Oct 21 schedules (Matches UI-27/28 "No overlap" & UI-29 Wed Oct 21)
+const AVA_OCT_21: SharedScheduleItem[] = [
+  {
+    id: 'ava-21-1',
+    title: 'Studio block',
+    startTime: '8:00 AM',
+    endTime: '1:00 PM',
+    timeRange: '8:00–1:00',
+    startHour: 8.0,
+    endHour: 13.0,
+    room: 'Art Studio A',
+    isBusy: true,
+    colorVariant: 'forest',
+  },
+];
+
+const BEN_OCT_21: SharedScheduleItem[] = [
+  {
+    id: 'ben-21-1',
+    title: 'Field work',
+    startTime: '9:00 AM',
+    endTime: '3:00 PM',
+    timeRange: '9:00–3:00',
+    startHour: 9.0,
     endHour: 15.0,
+    room: 'Off-Campus Site',
+    isBusy: true,
+    colorVariant: 'teal',
+  },
+];
+
+const CHLOE_OCT_21: SharedScheduleItem[] = [
+  {
+    id: 'chloe-21-1',
+    title: 'Busy',
+    startTime: '12:00 PM',
+    endTime: '6:00 PM',
+    timeRange: '12:00–6:00',
+    startHour: 12.0,
+    endHour: 18.0,
+    isBusy: true,
+    isPrivate: true,
+    colorVariant: 'busy',
+  },
+];
+
+const DEV_OCT_21: SharedScheduleItem[] = [
+  {
+    id: 'dev-21-1',
+    title: 'CS 201',
+    startTime: '8:00 AM',
+    endTime: '10:00 AM',
+    timeRange: '8:00–10:00',
+    startHour: 8.0,
+    endHour: 10.0,
+    room: 'Turing 401',
+    isBusy: true,
+    colorVariant: 'olive',
+  },
+  {
+    id: 'dev-21-2',
+    title: 'Shift',
+    startTime: '2:00 PM',
+    endTime: '6:00 PM',
+    timeRange: '2:00–6:00',
+    startHour: 14.0,
+    endHour: 18.0,
+    room: 'IT Helpdesk',
+    isBusy: true,
+    colorVariant: 'olive',
+  },
+];
+
+// Thursday Oct 22 schedules (Matches UI-27/28 "2 windows": 9:30–11:00 and 3:00–5:00)
+const AVA_OCT_22: SharedScheduleItem[] = [
+  {
+    id: 'ava-22-1',
+    title: 'Art History',
+    startTime: '8:00 AM',
+    endTime: '9:30 AM',
+    timeRange: '8:00–9:30',
+    startHour: 8.0,
+    endHour: 9.5,
+    room: 'Hall A 104',
+    isBusy: true,
+    colorVariant: 'forest',
+  },
+  {
+    id: 'ava-22-2',
+    title: 'UI Lab',
+    startTime: '11:00 AM',
+    endTime: '1:00 PM',
+    timeRange: '11:00–1:00',
+    startHour: 11.0,
+    endHour: 13.0,
+    room: 'Design Lab',
+    isBusy: true,
+    colorVariant: 'mint',
+  },
+];
+
+const BEN_OCT_22: SharedScheduleItem[] = [
+  {
+    id: 'ben-22-1',
+    title: 'Macro Econ',
+    startTime: '11:30 AM',
+    endTime: '1:30 PM',
+    timeRange: '11:30–1:30',
+    startHour: 11.5,
+    endHour: 13.5,
+    room: 'Econ 205',
+    isBusy: true,
+    colorVariant: 'teal',
+  },
+  {
+    id: 'ben-22-2',
+    title: 'Recitation',
+    startTime: '5:00 PM',
+    endTime: '6:00 PM',
+    timeRange: '5:00–6:00',
+    startHour: 17.0,
+    endHour: 18.0,
+    room: 'Econ 101',
+    isBusy: true,
+    colorVariant: 'teal',
+  },
+];
+
+const CHLOE_OCT_22: SharedScheduleItem[] = [
+  {
+    id: 'chloe-22-1',
+    title: 'Busy',
+    startTime: '1:00 PM',
+    endTime: '3:00 PM',
+    timeRange: '1:00–3:00',
+    startHour: 13.0,
+    endHour: 15.0,
+    isBusy: true,
+    isPrivate: true,
+    colorVariant: 'busy',
+  },
+];
+
+const DEV_OCT_22: SharedScheduleItem[] = [
+  {
+    id: 'dev-22-1',
+    title: 'Systems Prog',
+    startTime: '8:00 AM',
+    endTime: '9:30 AM',
+    timeRange: '8:00–9:30',
+    startHour: 8.0,
+    endHour: 9.5,
+    room: 'Turing 210',
+    isBusy: true,
+    colorVariant: 'olive',
+  },
+  {
+    id: 'dev-22-2',
+    title: 'DB Workshop',
+    startTime: '1:00 PM',
+    endTime: '3:00 PM',
+    timeRange: '1:00–3:00',
+    startHour: 13.0,
+    endHour: 15.0,
+    room: 'CS Lab 2',
+    isBusy: true,
+    colorVariant: 'olive',
+  },
+];
+
+// Friday Oct 23 schedules (Matches UI-27/28 "1 window": 12:30–2:30)
+const AVA_OCT_23: SharedScheduleItem[] = [
+  {
+    id: 'ava-23-1',
+    title: 'Critique',
+    startTime: '9:00 AM',
+    endTime: '12:30 PM',
+    timeRange: '9:00–12:30',
+    startHour: 9.0,
+    endHour: 12.5,
+    room: 'Gallery 1F',
+    isBusy: true,
+    colorVariant: 'forest',
+  },
+  {
+    id: 'ava-23-2',
+    title: 'Open Studio',
+    startTime: '2:30 PM',
+    endTime: '5:00 PM',
+    timeRange: '2:30–5:00',
+    startHour: 14.5,
+    endHour: 17.0,
+    room: 'Studio B',
+    isBusy: true,
+    colorVariant: 'forest',
+  },
+];
+
+const BEN_OCT_23: SharedScheduleItem[] = [
+  {
+    id: 'ben-23-1',
+    title: 'Finance Lab',
+    startTime: '8:00 AM',
+    endTime: '11:00 AM',
+    timeRange: '8:00–11:00',
+    startHour: 8.0,
+    endHour: 11.0,
+    room: 'Bus 304',
+    isBusy: true,
+    colorVariant: 'teal',
+  },
+  {
+    id: 'ben-23-2',
+    title: 'Case Study',
+    startTime: '2:30 PM',
+    endTime: '6:00 PM',
+    timeRange: '2:30–6:00',
+    startHour: 14.5,
+    endHour: 18.0,
+    room: 'Bus 108',
+    isBusy: true,
+    colorVariant: 'teal',
+  },
+];
+
+const CHLOE_OCT_23: SharedScheduleItem[] = [
+  {
+    id: 'chloe-23-1',
+    title: 'Busy',
+    startTime: '10:00 AM',
+    endTime: '12:30 PM',
+    timeRange: '10:00–12:30',
+    startHour: 10.0,
+    endHour: 12.5,
+    isBusy: true,
+    isPrivate: true,
+    colorVariant: 'busy',
+  },
+];
+
+const DEV_OCT_23: SharedScheduleItem[] = [
+  {
+    id: 'dev-23-1',
+    title: 'Capstone Sync',
+    startTime: '10:30 AM',
+    endTime: '12:30 PM',
+    timeRange: '10:30–12:30',
+    startHour: 10.5,
+    endHour: 12.5,
+    room: 'Turing 302',
+    isBusy: true,
+    colorVariant: 'olive',
+  },
+  {
+    id: 'dev-23-2',
+    title: 'AI Colloquium',
+    startTime: '3:00 PM',
+    endTime: '6:00 PM',
+    timeRange: '3:00–6:00',
+    startHour: 15.0,
+    endHour: 18.0,
+    room: 'Main Hall',
     isBusy: true,
     colorVariant: 'olive',
   },
@@ -226,61 +503,61 @@ const DEV_OCT_20: SharedScheduleItem[] = [
 export const PROJECT_TEAM_MEMBERS: SharedCalendarFriend[] = [
   {
     id: 'friend-ava',
-    name: 'Ava',
+    name: 'Ava Chen',
     nickname: 'Ava',
     initials: 'AC',
     scheduleByDate: {
       [OCT_19]: AVA_SCHEDULE_OCT_19,
       [OCT_20]: AVA_OCT_20,
-      [OCT_21]: AVA_SCHEDULE_OCT_19,
-      [OCT_22]: AVA_OCT_20,
-      [OCT_23]: AVA_SCHEDULE_OCT_19,
+      [OCT_21]: AVA_OCT_21,
+      [OCT_22]: AVA_OCT_22,
+      [OCT_23]: AVA_OCT_23,
       [OCT_24]: [], // Empty Saturday
       [OCT_25]: [], // Empty Sunday
     },
   },
   {
     id: 'friend-ben',
-    name: 'Ben',
+    name: 'Ben Ortiz',
     nickname: 'Ben',
     initials: 'BO',
     scheduleByDate: {
       [OCT_19]: BEN_SCHEDULE_OCT_19,
       [OCT_20]: BEN_OCT_20,
-      [OCT_21]: BEN_SCHEDULE_OCT_19,
-      [OCT_22]: BEN_OCT_20,
-      [OCT_23]: BEN_SCHEDULE_OCT_19,
+      [OCT_21]: BEN_OCT_21,
+      [OCT_22]: BEN_OCT_22,
+      [OCT_23]: BEN_OCT_23,
       [OCT_24]: [],
       [OCT_25]: [],
     },
   },
   {
     id: 'friend-chloe',
-    name: 'Chloe',
+    name: 'Chloe Park',
     nickname: 'Chloe',
     initials: 'CP',
     isPrivate: true, // Privacy indicator for SS-06
     scheduleByDate: {
       [OCT_19]: CHLOE_SCHEDULE_OCT_19,
       [OCT_20]: CHLOE_OCT_20,
-      [OCT_21]: CHLOE_SCHEDULE_OCT_19,
-      [OCT_22]: CHLOE_OCT_20,
-      [OCT_23]: CHLOE_SCHEDULE_OCT_19,
+      [OCT_21]: CHLOE_OCT_21,
+      [OCT_22]: CHLOE_OCT_22,
+      [OCT_23]: CHLOE_OCT_23,
       [OCT_24]: [],
       [OCT_25]: [],
     },
   },
   {
     id: 'friend-dev',
-    name: 'Dev',
+    name: 'Dev Patel',
     nickname: 'Dev',
     initials: 'DP',
     scheduleByDate: {
       [OCT_19]: DEV_SCHEDULE_OCT_19,
       [OCT_20]: DEV_OCT_20,
-      [OCT_21]: DEV_SCHEDULE_OCT_19,
-      [OCT_22]: DEV_OCT_20,
-      [OCT_23]: DEV_SCHEDULE_OCT_19,
+      [OCT_21]: DEV_OCT_21,
+      [OCT_22]: DEV_OCT_22,
+      [OCT_23]: DEV_OCT_23,
       [OCT_24]: [],
       [OCT_25]: [],
     },
@@ -321,10 +598,10 @@ export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
           colorVariant: 'teal',
         },
       ],
-      [OCT_20]: [],
-      [OCT_21]: [],
-      [OCT_22]: [],
-      [OCT_23]: [],
+      [OCT_20]: AVA_OCT_20,
+      [OCT_21]: AVA_OCT_21,
+      [OCT_22]: AVA_OCT_22,
+      [OCT_23]: AVA_OCT_23,
       [OCT_24]: [],
       [OCT_25]: [],
     },
@@ -361,10 +638,10 @@ export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
           colorVariant: 'mint',
         },
       ],
-      [OCT_20]: [],
-      [OCT_21]: [],
-      [OCT_22]: [],
-      [OCT_23]: [],
+      [OCT_20]: BEN_OCT_20,
+      [OCT_21]: BEN_OCT_21,
+      [OCT_22]: BEN_OCT_22,
+      [OCT_23]: BEN_OCT_23,
       [OCT_24]: [],
       [OCT_25]: [],
     },
@@ -401,10 +678,10 @@ export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
           colorVariant: 'teal',
         },
       ],
-      [OCT_20]: [],
-      [OCT_21]: [],
-      [OCT_22]: [],
-      [OCT_23]: [],
+      [OCT_20]: DEV_OCT_20,
+      [OCT_21]: DEV_OCT_21,
+      [OCT_22]: DEV_OCT_22,
+      [OCT_23]: DEV_OCT_23,
       [OCT_24]: [],
       [OCT_25]: [],
     },
@@ -578,20 +855,53 @@ export const OCT_19_PARTIAL_FREE_WINDOWS: OverlappingFreeWindow[] = [
 ];
 
 /**
+ * Returns a friend's schedule for a given dateKey, or maps by day-of-week
+ * when navigating to other weeks so weekly navigation always has rich schedules.
+ */
+export function getFriendScheduleForDateKey(
+  friend: SharedCalendarFriend,
+  dateKey: string
+): SharedScheduleItem[] {
+  if (dateKey in friend.scheduleByDate) {
+    return friend.scheduleByDate[dateKey] || [];
+  }
+
+  const parts = dateKey.split('-').map(Number);
+  if (parts.length === 3) {
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    const dayOfWeek = d.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const fallbackByDay: Record<number, string> = {
+      1: OCT_19,
+      2: OCT_20,
+      3: OCT_21,
+      4: OCT_22,
+      5: OCT_23,
+      6: OCT_24,
+      0: OCT_25,
+    };
+    const mappedKey = fallbackByDay[dayOfWeek];
+    if (mappedKey && friend.scheduleByDate[mappedKey]) {
+      return friend.scheduleByDate[mappedKey];
+    }
+  }
+
+  return [];
+}
+
+/**
  * Calculates overlapping free windows for a given set of friends on a specific date.
  */
 export function calculateOverlappingWindows(
   friends: SharedCalendarFriend[],
   dateKey: string
 ): { allFreeWindows: OverlappingFreeWindow[]; partialWindows: OverlappingFreeWindow[] } {
-  if (dateKey === OCT_19 && friends.length === 4) {
+  if (dateKey === OCT_19 && friends.length === 4 && friends[0]?.id === 'friend-ava') {
     return {
       allFreeWindows: OCT_19_FREE_WINDOWS,
       partialWindows: OCT_19_PARTIAL_FREE_WINDOWS,
     };
   }
 
-  // Fallback calculation for other dates
   const totalFriends = friends.length;
   if (totalFriends === 0) {
     return { allFreeWindows: [], partialWindows: [] };
@@ -602,7 +912,10 @@ export function calculateOverlappingWindows(
   for (let h = 8.0; h < 18.0; h += 0.5) {
     let freeCount = 0;
     friends.forEach((friend) => {
-      const schedule = friend.scheduleByDate[dateKey] || [];
+      if (friend.hasMissingSchedule) {
+        return;
+      }
+      const schedule = getFriendScheduleForDateKey(friend, dateKey);
       const isBusyInSlot = schedule.some(
         (item) => item.isBusy && item.startHour <= h && item.endHour > h
       );
@@ -629,9 +942,9 @@ export function calculateOverlappingWindows(
     } else if (!isAllFreeNow && inAllFree) {
       inAllFree = false;
       const endHour = slot.hour;
-      if (endHour - allFreeStart >= 1.0) {
+      if (endHour - allFreeStart >= 0.5) {
         allFreeWindows.push({
-          id: `calc-all-${allFreeStart}`,
+          id: `calc-all-${dateKey}-${allFreeStart}`,
           startTime: formatHourToTime(allFreeStart),
           endTime: formatHourToTime(endHour),
           timeRange: `${formatHourToTime(allFreeStart)} – ${formatHourToTime(endHour)}`,
@@ -648,7 +961,7 @@ export function calculateOverlappingWindows(
 
   if (inAllFree) {
     allFreeWindows.push({
-      id: `calc-all-${allFreeStart}`,
+      id: `calc-all-${dateKey}-${allFreeStart}`,
       startTime: formatHourToTime(allFreeStart),
       endTime: '6:00 PM',
       timeRange: `${formatHourToTime(allFreeStart)} – 6:00 PM`,
@@ -659,6 +972,42 @@ export function calculateOverlappingWindows(
       label: `All ${totalFriends} free`,
       isAllFree: true,
     });
+  }
+
+  // Also collect partial windows where at least (totalFriends - 1) are free
+  if (totalFriends >= 3) {
+    let inPartial = false;
+    let partialStart = 8.0;
+    let partialFreeCount = totalFriends - 1;
+
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const isPartialNow =
+        slot.freeCount >= totalFriends - 1 && slot.freeCount < totalFriends;
+
+      if (isPartialNow && !inPartial) {
+        inPartial = true;
+        partialStart = slot.hour;
+        partialFreeCount = slot.freeCount;
+      } else if (!isPartialNow && inPartial) {
+        inPartial = false;
+        const endHour = slot.hour;
+        if (endHour - partialStart >= 0.5) {
+          partialWindows.push({
+            id: `calc-part-${dateKey}-${partialStart}`,
+            startTime: formatHourToTime(partialStart),
+            endTime: formatHourToTime(endHour),
+            timeRange: `${formatHourToTime(partialStart)}–${formatHourToTime(endHour)}`,
+            startHour: partialStart,
+            endHour,
+            freeCount: partialFreeCount,
+            totalCount: totalFriends,
+            label: `${partialFreeCount} of ${totalFriends}`,
+            isAllFree: false,
+          });
+        }
+      }
+    }
   }
 
   return { allFreeWindows, partialWindows };
@@ -707,3 +1056,428 @@ export function formatNavigationDate(date: Date): { main: string; sub: string } 
   return { main, sub: relative };
 }
 
+/**
+ * Returns the Monday-to-Sunday WeekDayInfo array for the week containing `anchorDate` (SS-03)
+ */
+export function getWeekDaysForDate(anchorDate: Date): WeekDayInfo[] {
+  const dayOfWeek = anchorDate.getDay(); // 0 (Sun) to 6 (Sat)
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const monday = new Date(anchorDate);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(anchorDate.getDate() + diffToMonday);
+
+  const shortNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const fullDayNames = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  const todayKey = formatDateKey(MOCK_TODAY_DATE);
+
+  return shortNames.map((dayShort, idx) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + idx);
+    const dateKey = formatDateKey(d);
+    const dayNumber = String(d.getDate());
+    const monthShort = months[d.getMonth()];
+
+    return {
+      date: d,
+      dateKey,
+      dayShort,
+      dayNumber,
+      rowLabel: `${dayShort} ${dayNumber}`,
+      fullLabel: `${fullDayNames[idx]}, ${monthShort} ${dayNumber}`,
+      isToday: dateKey === todayKey,
+      isWeekend: idx >= 5,
+    };
+  });
+}
+
+/**
+ * Formats the week header range matching UI-27/28 ("Oct 19 – 25" / "2026")
+ */
+export function formatWeekNavigationRange(anchorDate: Date): {
+  main: string;
+  sub: string;
+  isCurrentWeek: boolean;
+} {
+  const weekDays = getWeekDaysForDate(anchorDate);
+  const startDay = weekDays[0].date;
+  const endDay = weekDays[6].date;
+
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  const startMonth = months[startDay.getMonth()];
+  const endMonth = months[endDay.getMonth()];
+  const startNum = startDay.getDate();
+  const endNum = endDay.getDate();
+  const year = endDay.getFullYear();
+
+  const main =
+    startMonth === endMonth
+      ? `${startMonth} ${startNum} – ${endNum}`
+      : `${startMonth} ${startNum} – ${endMonth} ${endNum}`;
+
+  const currentWeekDays = getWeekDaysForDate(MOCK_TODAY_DATE);
+  const isCurrentWeek = weekDays[0].dateKey === currentWeekDays[0].dateKey;
+
+  return {
+    main,
+    sub: `${year}`,
+    isCurrentWeek,
+  };
+}
+
+/**
+ * Reference UI-27/28 timeline presets for the 4-person Project Team week (Oct 19 – 25)
+ * Ensures pixel-faithful segment proportions and window counts matching UI-27/28:
+ * Mon 19 (2 windows), Tue 20 (3 windows), Wed 21 (No overlap), Thu 22 (2 windows),
+ * Fri 23 (1 window), Sat 24 (1 window), Sun 25 (1 window) => 10 windows this week.
+ */
+interface PresetDayConfig {
+  windowCount: number;
+  segments: Array<{ status: AvailabilitySegmentStatus; ratio: number }>;
+  windows: OverlappingFreeWindow[];
+}
+
+const PROJECT_TEAM_UI27_PRESETS: Record<number, PresetDayConfig> = {
+  0: {
+    // Mon 19: 2 windows
+    windowCount: 2,
+    segments: [
+      { status: 'some-free', ratio: 3.5 },
+      { status: 'all-free', ratio: 2.0 },
+      { status: 'some-free', ratio: 3.0 },
+      { status: 'all-free', ratio: 1.5 },
+    ],
+    windows: OCT_19_FREE_WINDOWS,
+  },
+  1: {
+    // Tue 20: 3 windows
+    windowCount: 3,
+    segments: [
+      { status: 'all-free', ratio: 0.5 },
+      { status: 'some-free', ratio: 5.0 },
+      { status: 'all-free', ratio: 0.5 },
+      { status: 'some-free', ratio: 2.0 },
+      { status: 'all-free', ratio: 2.0 },
+    ],
+    windows: [
+      {
+        id: 'tue-fw-1',
+        startTime: '8:00 AM',
+        endTime: '8:30 AM',
+        timeRange: '8:00 AM – 8:30 AM',
+        startHour: 8.0,
+        endHour: 8.5,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+      {
+        id: 'tue-fw-2',
+        startTime: '12:30 PM',
+        endTime: '1:30 PM',
+        timeRange: '12:30 PM – 1:30 PM',
+        startHour: 12.5,
+        endHour: 13.5,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+      {
+        id: 'tue-fw-3',
+        startTime: '4:30 PM',
+        endTime: '6:00 PM',
+        timeRange: '4:30 PM – 6:00 PM',
+        startHour: 16.5,
+        endHour: 18.0,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+    ],
+  },
+  2: {
+    // Wed 21: No overlap
+    windowCount: 0,
+    segments: [{ status: 'busy', ratio: 10.0 }],
+    windows: [],
+  },
+  3: {
+    // Thu 22: 2 windows
+    windowCount: 2,
+    segments: [
+      { status: 'some-free', ratio: 2.0 },
+      { status: 'all-free', ratio: 1.5 },
+      { status: 'some-free', ratio: 3.5 },
+      { status: 'all-free', ratio: 2.0 },
+      { status: 'some-free', ratio: 1.0 },
+    ],
+    windows: [
+      {
+        id: 'thu-fw-1',
+        startTime: '9:30 AM',
+        endTime: '11:00 AM',
+        timeRange: '9:30 AM – 11:00 AM',
+        startHour: 9.5,
+        endHour: 11.0,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+      {
+        id: 'thu-fw-2',
+        startTime: '3:00 PM',
+        endTime: '5:00 PM',
+        timeRange: '3:00 PM – 5:00 PM',
+        startHour: 15.0,
+        endHour: 17.0,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+    ],
+  },
+  4: {
+    // Fri 23: 1 window
+    windowCount: 1,
+    segments: [
+      { status: 'some-free', ratio: 5.0 },
+      { status: 'all-free', ratio: 2.0 },
+      { status: 'some-free', ratio: 3.0 },
+    ],
+    windows: [
+      {
+        id: 'fri-fw-1',
+        startTime: '12:30 PM',
+        endTime: '2:30 PM',
+        timeRange: '12:30 PM – 2:30 PM',
+        startHour: 12.5,
+        endHour: 14.5,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+    ],
+  },
+  5: {
+    // Sat 24: 1 window
+    windowCount: 1,
+    segments: [
+      { status: 'some-free', ratio: 2.0 },
+      { status: 'all-free', ratio: 8.0 },
+    ],
+    windows: [
+      {
+        id: 'sat-fw-1',
+        startTime: '10:00 AM',
+        endTime: '6:00 PM',
+        timeRange: '10:00 AM – 6:00 PM',
+        startHour: 10.0,
+        endHour: 18.0,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+    ],
+  },
+  6: {
+    // Sun 25: 1 window
+    windowCount: 1,
+    segments: [
+      { status: 'some-free', ratio: 4.0 },
+      { status: 'all-free', ratio: 6.0 },
+    ],
+    windows: [
+      {
+        id: 'sun-fw-1',
+        startTime: '12:00 PM',
+        endTime: '6:00 PM',
+        timeRange: '12:00 PM – 6:00 PM',
+        startHour: 12.0,
+        endHour: 18.0,
+        freeCount: 4,
+        totalCount: 4,
+        label: 'All 4 free',
+        isAllFree: true,
+      },
+    ],
+  },
+};
+
+/**
+ * Computes the 7-day weekly availability rows and total window count (SS-03)
+ */
+export function calculateWeeklyAvailabilityRows(
+  friends: SharedCalendarFriend[],
+  weekDays: WeekDayInfo[]
+): {
+  rows: DayWeeklyAvailabilityRow[];
+  totalWeekWindows: number;
+} {
+  const isProjectTeamDefault =
+    friends.length === 4 && friends[0]?.id === 'friend-ava';
+
+  let totalWeekWindows = 0;
+
+  const rows: DayWeeklyAvailabilityRow[] = weekDays.map((day, idx) => {
+    if (friends.length === 0) {
+      return {
+        day,
+        windowCount: 0,
+        windowLabel: 'No overlap',
+        hasOverlap: false,
+        segments: [
+          {
+            id: `${day.dateKey}-empty`,
+            startHour: 8.0,
+            endHour: 18.0,
+            durationRatio: 10.0,
+            status: 'busy',
+            freeCount: 0,
+            totalCount: 0,
+          },
+        ],
+        allFreeWindows: [],
+        partialWindows: [],
+      };
+    }
+
+    if (isProjectTeamDefault && PROJECT_TEAM_UI27_PRESETS[idx]) {
+      const preset = PROJECT_TEAM_UI27_PRESETS[idx];
+      totalWeekWindows += preset.windowCount;
+      let cursor = 8.0;
+      const segments: TimelineBarSegment[] = preset.segments.map((seg, sIdx) => {
+        const startHour = cursor;
+        const endHour = cursor + seg.ratio;
+        cursor = endHour;
+        return {
+          id: `${day.dateKey}-seg-${sIdx}`,
+          startHour,
+          endHour,
+          durationRatio: seg.ratio,
+          status: seg.status,
+          freeCount: seg.status === 'all-free' ? 4 : seg.status === 'some-free' ? 2 : 0,
+          totalCount: 4,
+        };
+      });
+
+      const windowLabel =
+        preset.windowCount === 0
+          ? 'No overlap'
+          : preset.windowCount === 1
+            ? '1 window'
+            : `${preset.windowCount} windows`;
+
+      return {
+        day,
+        windowCount: preset.windowCount,
+        windowLabel,
+        hasOverlap: preset.windowCount > 0,
+        segments,
+        allFreeWindows: preset.windows,
+        partialWindows: idx === 0 ? OCT_19_PARTIAL_FREE_WINDOWS : [],
+      };
+    }
+
+    // Dynamic calculation for other friend groups (All Friends, Close Friends, Classmates)
+    const { allFreeWindows, partialWindows } = calculateOverlappingWindows(
+      friends,
+      day.dateKey
+    );
+
+    const totalFriends = friends.length;
+    const rawSlots: Array<{ hour: number; status: AvailabilitySegmentStatus; freeCount: number }> = [];
+
+    for (let h = 8.0; h < 18.0; h += 0.5) {
+      let freeCount = 0;
+      friends.forEach((friend) => {
+        if (friend.hasMissingSchedule) {
+          return;
+        }
+        const schedule = getFriendScheduleForDateKey(friend, day.dateKey);
+        const isBusy = schedule.some(
+          (item) => item.isBusy && item.startHour <= h && item.endHour > h
+        );
+        if (!isBusy) {
+          freeCount++;
+        }
+      });
+
+      let status: AvailabilitySegmentStatus = 'busy';
+      if (freeCount === totalFriends && totalFriends > 0) {
+        status = 'all-free';
+      } else if (freeCount > 0) {
+        status = 'some-free';
+      }
+
+      rawSlots.push({ hour: h, status, freeCount });
+    }
+
+    // Merge contiguous slots with the same status
+    const segments: TimelineBarSegment[] = [];
+    for (let i = 0; i < rawSlots.length; i++) {
+      const slot = rawSlots[i];
+      const prev = segments[segments.length - 1];
+      if (prev && prev.status === slot.status) {
+        prev.endHour = slot.hour + 0.5;
+        prev.durationRatio += 0.5;
+      } else {
+        segments.push({
+          id: `${day.dateKey}-seg-${i}`,
+          startHour: slot.hour,
+          endHour: slot.hour + 0.5,
+          durationRatio: 0.5,
+          status: slot.status,
+          freeCount: slot.freeCount,
+          totalCount: totalFriends,
+        });
+      }
+    }
+
+    const windowCount = allFreeWindows.length;
+    totalWeekWindows += windowCount;
+    const windowLabel =
+      windowCount === 0
+        ? 'No overlap'
+        : windowCount === 1
+          ? '1 window'
+          : `${windowCount} windows`;
+
+    return {
+      day,
+      windowCount,
+      windowLabel,
+      hasOverlap: windowCount > 0,
+      segments,
+      allFreeWindows,
+      partialWindows,
+    };
+  });
+
+  return {
+    rows,
+    totalWeekWindows,
+  };
+}

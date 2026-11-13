@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { COLORS } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
 import { SharedDateNavigationProps } from '../../types/sharedSchedule';
-import { formatNavigationDate } from '../../mock/sharedScheduleData';
+import {
+  formatNavigationDate,
+  formatWeekNavigationRange,
+} from '../../mock/sharedScheduleData';
 
 export const SharedDateNavigation: React.FC<SharedDateNavigationProps> = ({
   currentDate,
@@ -12,38 +14,79 @@ export const SharedDateNavigation: React.FC<SharedDateNavigationProps> = ({
   onNextDay,
   onToday,
   isToday,
+  viewMode = 'day',
+  onPrevWeek,
+  onNextWeek,
+  onThisWeek,
+  isCurrentWeek = true,
 }) => {
-  const { main, sub } = formatNavigationDate(currentDate);
+  const isWeekMode = viewMode === 'week';
+
+  const dateDisplay = isWeekMode
+    ? formatWeekNavigationRange(currentDate)
+    : formatNavigationDate(currentDate);
+
+  const isResetActive = isWeekMode ? isCurrentWeek : isToday;
+  const resetLabel = isWeekMode ? 'This week' : 'Today';
+
+  const handlePrev = () => {
+    if (isWeekMode && onPrevWeek) {
+      onPrevWeek();
+    } else {
+      onPrevDay();
+    }
+  };
+
+  const handleNext = () => {
+    if (isWeekMode && onNextWeek) {
+      onNextWeek();
+    } else {
+      onNextDay();
+    }
+  };
+
+  const handleReset = () => {
+    if (isWeekMode && onThisWeek) {
+      onThisWeek();
+    } else {
+      onToday();
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Date Titles */}
+      {/* Date / Week Range Titles */}
       <View style={styles.titleColumn}>
-        <Text style={styles.mainDateText}>{main}</Text>
-        <Text style={styles.subDateText}>{sub}</Text>
+        <Text style={styles.mainDateText}>{dateDisplay.main}</Text>
+        <Text style={styles.subDateText}>{dateDisplay.sub}</Text>
       </View>
 
       {/* Navigation Controls */}
       <View style={styles.controlsRow}>
-        {/* Today Button */}
+        {/* Today / This week Button */}
         <TouchableOpacity
-          style={[styles.todayButton, isToday && styles.todayButtonActive]}
-          onPress={onToday}
+          style={[styles.todayButton, isResetActive && styles.todayButtonActive]}
+          onPress={handleReset}
           activeOpacity={0.7}
-          accessibilityLabel="Go to Today"
+          accessibilityLabel={isWeekMode ? 'Go to This week' : 'Go to Today'}
           accessibilityRole="button"
         >
-          <Text style={[styles.todayButtonText, isToday && styles.todayButtonTextActive]}>
-            Today
+          <Text
+            style={[
+              styles.todayButtonText,
+              isResetActive && styles.todayButtonTextActive,
+            ]}
+          >
+            {resetLabel}
           </Text>
         </TouchableOpacity>
 
-        {/* Previous Day Chevron */}
+        {/* Previous Day / Week Chevron */}
         <TouchableOpacity
           style={styles.arrowButton}
-          onPress={onPrevDay}
+          onPress={handlePrev}
           activeOpacity={0.7}
-          accessibilityLabel="Previous Day"
+          accessibilityLabel={isWeekMode ? 'Previous Week' : 'Previous Day'}
           accessibilityRole="button"
         >
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -57,12 +100,12 @@ export const SharedDateNavigation: React.FC<SharedDateNavigationProps> = ({
           </Svg>
         </TouchableOpacity>
 
-        {/* Next Day Chevron */}
+        {/* Next Day / Week Chevron */}
         <TouchableOpacity
           style={styles.arrowButton}
-          onPress={onNextDay}
+          onPress={handleNext}
           activeOpacity={0.7}
-          accessibilityLabel="Next Day"
+          accessibilityLabel={isWeekMode ? 'Next Week' : 'Next Day'}
           accessibilityRole="button"
         >
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -118,12 +161,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   todayButtonActive: {
-    backgroundColor: '#DEE6DC',
-    borderWidth: 1,
-    borderColor: '#C3D4C2',
+    backgroundColor: '#E6ECE4',
   },
   todayButtonText: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.bold,
     fontSize: 13,
     color: '#243728',
   },
@@ -140,4 +181,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

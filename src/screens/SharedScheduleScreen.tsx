@@ -23,6 +23,7 @@ import {
   SharedFriendGroup,
   SharedScheduleItem,
   SharedViewMode,
+  WeeklyCalendarLayoutMode,
   SharedScheduleScreenProps,
 } from '../types/sharedSchedule';
 import {
@@ -30,12 +31,14 @@ import {
   SHARED_FRIEND_GROUPS,
   formatDateKey,
   calculateOverlappingWindows,
+  formatWeekNavigationRange,
 } from '../mock/sharedScheduleData';
 import { SharedDateNavigation } from '../components/sharedSchedule/SharedDateNavigation';
 import { SharedViewModeToggle } from '../components/sharedSchedule/SharedViewModeToggle';
 import { SharedGroupFilter } from '../components/sharedSchedule/SharedGroupFilter';
 import { SharedFreeWindowBanner } from '../components/sharedSchedule/SharedFreeWindowBanner';
 import { DailySharedCalendar } from '../components/sharedSchedule/DailySharedCalendar';
+import { WeeklySharedCalendar } from '../components/sharedSchedule/WeeklySharedCalendar';
 import { FriendGroupSelectorModal } from '../components/sharedSchedule/FriendGroupSelectorModal';
 
 export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
@@ -46,8 +49,10 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
   // 1. Date State
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
 
-  // 2. View Mode State ('day' vs 'week')
+  // 2. View Mode State ('day' vs 'week') & Weekly Layout Mode ('common-timeline' vs 'multi-person')
   const [viewMode, setViewMode] = useState<SharedViewMode>('day');
+  const [weeklyLayoutMode, setWeeklyLayoutMode] =
+    useState<WeeklyCalendarLayoutMode>('common-timeline');
 
   // 3. Friend Group State
   const [selectedGroupId, setSelectedGroupId] = useState<string>(initialGroupId);
@@ -85,6 +90,11 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
     return formatDateKey(currentDate) === formatDateKey(MOCK_TODAY_DATE);
   }, [currentDate]);
 
+  // Check if current week matches reference week
+  const isCurrentWeek = useMemo(() => {
+    return formatWeekNavigationRange(currentDate).isCurrentWeek;
+  }, [currentDate]);
+
   // Overlapping Free Windows for current date and friends
   const { allFreeWindows, partialWindows } = useMemo(() => {
     return calculateOverlappingWindows(activeGroup.members, dateKey);
@@ -112,6 +122,27 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
   }, []);
 
   const handleToday = useCallback(() => {
+    setCurrentDate(MOCK_TODAY_DATE);
+  }, []);
+
+  // Weekly navigation handlers (SS-03)
+  const handlePrevWeek = useCallback(() => {
+    setCurrentDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() - 7);
+      return next;
+    });
+  }, []);
+
+  const handleNextWeek = useCallback(() => {
+    setCurrentDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + 7);
+      return next;
+    });
+  }, []);
+
+  const handleThisWeek = useCallback(() => {
     setCurrentDate(MOCK_TODAY_DATE);
   }, []);
 
@@ -174,13 +205,18 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* ================= 2. DATE NAVIGATION ================= */}
+          {/* ================= 2. DATE / WEEK NAVIGATION ================= */}
           <SharedDateNavigation
             currentDate={currentDate}
             onPrevDay={handlePrevDay}
             onNextDay={handleNextDay}
             onToday={handleToday}
             isToday={isToday}
+            viewMode={viewMode}
+            onPrevWeek={handlePrevWeek}
+            onNextWeek={handleNextWeek}
+            onThisWeek={handleThisWeek}
+            isCurrentWeek={isCurrentWeek}
           />
 
           {/* ================= 3. DAY / WEEK VIEW TOGGLE ================= */}
@@ -189,42 +225,34 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
             onViewModeChange={(mode) => setViewMode(mode)}
           />
 
-          {/* If user selects "Week", show placeholder for teammate's ticket SS-03 */}
+          {/* ================= 4. FRIEND GROUP FILTER ================= */}
+          <SharedGroupFilter
+            groups={SHARED_FRIEND_GROUPS}
+            selectedGroupId={selectedGroupId}
+            onSelectGroup={(g) => setSelectedGroupId(g.id)}
+            onOpenSelector={() => setIsGroupModalOpen(true)}
+          />
+
+          {/* ================= 5. WEEKLY OR DAILY SHARED CALENDAR ================= */}
           {viewMode === 'week' ? (
-            <View style={styles.weekPlaceholderCard}>
-              <View style={styles.weekPlaceholderIcon}>
-                <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"
-                    stroke="#2D5A38"
-                    strokeWidth={2}
-                  />
-                  <Path d="M3 10h18M8 3v4M16 3v4" stroke="#2D5A38" strokeWidth={2} />
-                </Svg>
-              </View>
-              <Text style={styles.weekPlaceholderTitle}>Weekly Shared Calendar</Text>
-              <Text style={styles.weekPlaceholderSubtitle}>
-                [SS-03 Architectural Slot] Weekly multi-friend view will be rendered
-                here by teammate.
-              </Text>
-              <TouchableOpacity
-                style={styles.returnToDayButton}
-                onPress={() => setViewMode('day')}
-              >
-                <Text style={styles.returnToDayText}>Switch back to Daily Calendar</Text>
-              </TouchableOpacity>
-            </View>
+            <WeeklySharedCalendar
+              currentDate={currentDate}
+              onSelectDate={(date) => setCurrentDate(date)}
+              friends={activeGroup.members}
+              layoutMode={weeklyLayoutMode}
+              onLayoutModeChange={(mode) => setWeeklyLayoutMode(mode)}
+              onFriendPress={(friend) => setSelectedFriendModal(friend)}
+              onScheduleItemPress={(item, friend) =>
+                setSelectedItemModal({ item, friend })
+              }
+              onOpenDayView={(date) => {
+                setCurrentDate(date);
+                setViewMode('day');
+              }}
+            />
           ) : (
             <>
-              {/* ================= 4. FRIEND GROUP FILTER ================= */}
-              <SharedGroupFilter
-                groups={SHARED_FRIEND_GROUPS}
-                selectedGroupId={selectedGroupId}
-                onSelectGroup={(g) => setSelectedGroupId(g.id)}
-                onOpenSelector={() => setIsGroupModalOpen(true)}
-              />
-
-              {/* ================= 5. OVERLAPPING FREE WINDOW BANNER ================= */}
+              {/* ================= 5A. OVERLAPPING FREE WINDOW BANNER ================= */}
               {allFreeWindows.length > 0 && activeGroup.members.length > 0 && (
                 <SharedFreeWindowBanner
                   freeWindows={allFreeWindows}

@@ -2,7 +2,11 @@ import { TabId } from './navigation';
 
 export type SharedViewMode = 'day' | 'week';
 
+export type WeeklyCalendarLayoutMode = 'common-timeline' | 'multi-person';
+
 export type ScheduleColorVariant = 'forest' | 'teal' | 'olive' | 'mint' | 'busy';
+
+export type AvailabilitySegmentStatus = 'all-free' | 'some-free' | 'busy';
 
 export interface SharedScheduleItem {
   id: string;
@@ -65,6 +69,37 @@ export interface OverlappingFreeWindow {
   isAllFree: boolean;
 }
 
+export interface WeekDayInfo {
+  date: Date;
+  dateKey: string;
+  dayShort: string;   // e.g. "Mon"
+  dayNumber: string;  // e.g. "19"
+  rowLabel: string;   // e.g. "Mon 19"
+  fullLabel: string;  // e.g. "Monday, Oct 19"
+  isToday: boolean;
+  isWeekend: boolean;
+}
+
+export interface TimelineBarSegment {
+  id: string;
+  startHour: number;
+  endHour: number;
+  durationRatio: number;
+  status: AvailabilitySegmentStatus;
+  freeCount: number;
+  totalCount: number;
+}
+
+export interface DayWeeklyAvailabilityRow {
+  day: WeekDayInfo;
+  windowCount: number;
+  windowLabel: string; // e.g. "2 windows", "3 windows", "No overlap", "1 window"
+  hasOverlap: boolean;
+  segments: TimelineBarSegment[];
+  allFreeWindows: OverlappingFreeWindow[];
+  partialWindows: OverlappingFreeWindow[];
+}
+
 export interface DailyCalendarProps {
   date: Date;
   dateKey: string;
@@ -82,6 +117,22 @@ export interface SharedDateNavigationProps {
   onNextDay: () => void;
   onToday: () => void;
   isToday: boolean;
+  viewMode?: SharedViewMode;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  onThisWeek?: () => void;
+  isCurrentWeek?: boolean;
+}
+
+export interface WeeklySharedCalendarProps {
+  currentDate: Date;
+  onSelectDate: (date: Date) => void;
+  friends: SharedCalendarFriend[];
+  layoutMode: WeeklyCalendarLayoutMode;
+  onLayoutModeChange: (mode: WeeklyCalendarLayoutMode) => void;
+  onFriendPress?: (friend: SharedCalendarFriend) => void;
+  onScheduleItemPress?: (item: SharedScheduleItem, friend: SharedCalendarFriend) => void;
+  onOpenDayView?: (date: Date) => void;
 }
 
 export interface SharedGroupFilterProps {
@@ -97,4 +148,3 @@ export interface SharedScheduleScreenProps {
   initialGroupId?: string;
   initialDate?: Date;
 }
-
