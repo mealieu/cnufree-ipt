@@ -38,6 +38,7 @@ import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { FriendScheduleScreen } from './FriendScheduleScreen';
 import { PersonalScheduleScreen } from './PersonalScheduleScreen';
 import { FriendsScreen } from './FriendsScreen';
+import { SharedScheduleScreen } from './SharedScheduleScreen';
 import { TabId } from '../types/navigation';
 
 export const HomeScreen: React.FC = () => {
@@ -102,6 +103,15 @@ export const HomeScreen: React.FC = () => {
   if (activeTab === 'friends') {
     return (
       <FriendsScreen
+        onNavigateTab={(tab) => setActiveTab(tab)}
+      />
+    );
+  }
+
+  // If viewing Shared Schedule screen (SS-01)
+  if (activeTab === 'shared') {
+    return (
+      <SharedScheduleScreen
         onNavigateTab={(tab) => setActiveTab(tab)}
       />
     );
