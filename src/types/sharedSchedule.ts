@@ -8,6 +8,12 @@ export type ScheduleColorVariant = 'forest' | 'teal' | 'olive' | 'mint' | 'busy'
 
 export type AvailabilitySegmentStatus = 'all-free' | 'some-free' | 'busy';
 
+export type ScheduleDataState =
+  | 'available'
+  | 'privacy-restricted'
+  | 'missing'
+  | 'unavailable';
+
 export interface SharedScheduleItem {
   id: string;
   title: string;
@@ -32,6 +38,12 @@ export interface SharedCalendarFriend {
   avatarUrl?: string;
   isPrivate?: boolean; // SS-06 privacy-restricted indicator
   hasMissingSchedule?: boolean; // SS-06 missing-schedule indicator
+  isUnavailable?: boolean; // SS-06 unavailable-data indicator
+  scheduleState?: ScheduleDataState; // SS-06 explicit state discriminator
+  privacyNotice?: string; // e.g. "Chloe limits what she shares"
+  privacyNoticeSub?: string; // e.g. "You can see busy and free times. Titles and rooms are hidden."
+  errorMessage?: string; // e.g. "sample error"
+  lastChecked?: string; // e.g. "sample error"
   scheduleByDate: Record<string, SharedScheduleItem[]>; // Keyed by ISO date string 'YYYY-MM-DD'
 }
 

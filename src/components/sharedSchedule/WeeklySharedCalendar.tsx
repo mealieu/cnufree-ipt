@@ -471,7 +471,7 @@ export const WeeklySharedCalendar: React.FC<WeeklySharedCalendarProps> = ({
                     <View style={{ flex: 1 }}>
                       <View style={styles.memberNameRow}>
                         <Text style={styles.memberNameText}>{friend.name}</Text>
-                        {friend.isPrivate && (
+                        {(friend.isPrivate || friend.scheduleState === 'privacy-restricted') && (
                           <Svg
                             width={12}
                             height={12}
@@ -495,15 +495,49 @@ export const WeeklySharedCalendar: React.FC<WeeklySharedCalendarProps> = ({
                             />
                           </Svg>
                         )}
+                        {(friend.hasMissingSchedule || friend.scheduleState === 'missing') && (
+                          <Svg
+                            width={12}
+                            height={12}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <Circle cx="12" cy="12" r="10" stroke="#7E6822" strokeWidth={2} />
+                            <Path
+                              d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"
+                              stroke="#7E6822"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                            />
+                          </Svg>
+                        )}
+                        {(friend.isUnavailable || friend.scheduleState === 'unavailable') && (
+                          <Svg
+                            width={12}
+                            height={12}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <Circle cx="12" cy="12" r="10" stroke="#7E6822" strokeWidth={2} />
+                            <Path
+                              d="M12 16v-4M12 8h.01"
+                              stroke="#7E6822"
+                              strokeWidth={2.2}
+                              strokeLinecap="round"
+                            />
+                          </Svg>
+                        )}
                       </View>
                       <Text style={styles.memberStatusSub}>
-                        {friend.hasMissingSchedule
-                          ? 'Schedule not shared'
-                          : friend.isPrivate
-                            ? 'Shares availability only'
-                            : `${dayItems.length} ${
-                                dayItems.length === 1 ? 'class' : 'classes'
-                              } on ${activeDayRow.day.rowLabel}`}
+                        {friend.isUnavailable || friend.scheduleState === 'unavailable'
+                          ? "Couldn't load schedule · Tap to retry"
+                          : friend.hasMissingSchedule || friend.scheduleState === 'missing'
+                            ? 'Schedule not shared · Tap to request'
+                            : friend.isPrivate || friend.scheduleState === 'privacy-restricted'
+                              ? 'Shares availability only'
+                              : `${dayItems.length} ${
+                                  dayItems.length === 1 ? 'class' : 'classes'
+                                } on ${activeDayRow.day.rowLabel}`}
                       </Text>
                     </View>
 
@@ -518,10 +552,16 @@ export const WeeklySharedCalendar: React.FC<WeeklySharedCalendarProps> = ({
                   </TouchableOpacity>
 
                   {/* Member's Schedule Blocks on this Day */}
-                  {friend.hasMissingSchedule ? (
+                  {friend.isUnavailable || friend.scheduleState === 'unavailable' ? (
                     <View style={styles.memberEmptyScheduleBox}>
                       <Text style={styles.memberEmptyScheduleText}>
-                        No schedule data shared for {friend.nickname || friend.name}.
+                        Couldn't load schedule for {friend.nickname || friend.name}. Tap card to retry.
+                      </Text>
+                    </View>
+                  ) : friend.hasMissingSchedule || friend.scheduleState === 'missing' ? (
+                    <View style={styles.memberEmptyScheduleBox}>
+                      <Text style={styles.memberEmptyScheduleText}>
+                        No schedule data shared for {friend.nickname || friend.name}. Tap card to ask.
                       </Text>
                     </View>
                   ) : dayItems.length === 0 ? (

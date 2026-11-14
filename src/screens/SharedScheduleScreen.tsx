@@ -372,7 +372,9 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
                     {selectedItemModal.friend.name}'s Schedule
                   </Text>
                   <Text style={styles.detailActivityTitle}>
-                    {selectedItemModal.item.title}
+                    {selectedItemModal.item.isPrivate || selectedItemModal.friend.isPrivate
+                      ? 'Busy'
+                      : selectedItemModal.item.title}
                   </Text>
                 </TouchableOpacity>
 
@@ -400,19 +402,21 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
                   </Text>
                 </View>
 
-                {selectedItemModal.item.room && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Location:</Text>
-                    <Text style={styles.detailValue}>
-                      {selectedItemModal.item.room}
-                    </Text>
-                  </View>
-                )}
+                {selectedItemModal.item.room &&
+                  !selectedItemModal.item.isPrivate &&
+                  !selectedItemModal.friend.isPrivate && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Location:</Text>
+                      <Text style={styles.detailValue}>
+                        {selectedItemModal.item.room}
+                      </Text>
+                    </View>
+                  )}
 
-                {selectedItemModal.item.isPrivate && (
+                {(selectedItemModal.item.isPrivate || selectedItemModal.friend.isPrivate) && (
                   <View style={styles.privacyNoticeBadge}>
                     <Text style={styles.privacyNoticeText}>
-                      🔒 Marked as Busy (Private Event)
+                      🔒 Event titles and rooms are hidden by {selectedItemModal.friend.nickname || selectedItemModal.friend.name}
                     </Text>
                   </View>
                 )}

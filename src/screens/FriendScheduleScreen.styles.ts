@@ -853,5 +853,293 @@ export const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#FFFFFF',
   },
+
+  /* ========================================================================= */
+  /* SS-06: FIGMA UI-31 SPECIAL STATES STYLES */
+  /* ========================================================================= */
+
+  /* Amber/Cream Status Badge (UI-31) */
+  sharedStatusBadgeAmber: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5EFCB',
+    borderWidth: 1,
+    borderColor: '#E7DFB0',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 5,
+  },
+  sharedStatusBadgeAmberText: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
+    color: '#5C4A15',
+  },
+
+  /* Privacy Notice Card / Banner (UI-31 Privacy-Restricted) */
+  privacyBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EDE8D5',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DDD6BD',
+    gap: 12,
+  },
+  privacyIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FAF7EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  privacyTextCol: {
+    flex: 1,
+  },
+  privacyTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 14.5,
+    color: '#1A251D',
+    letterSpacing: -0.2,
+  },
+  privacySubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 12.5,
+    color: '#5C6B5F',
+    marginTop: 3,
+    lineHeight: 18,
+  },
+
+  /* Privacy-Restricted Busy Blocks (UI-31) */
+  sharedBusyPrivateBlock: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    backgroundColor: '#D9DDE2',
+    borderLeftWidth: 4.5,
+    borderLeftColor: '#4B5563',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  sharedBusyPrivateTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sharedBusyPrivateLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sharedBusyPrivateTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 13.5,
+    color: '#172019',
+  },
+  sharedBusyPrivateTimeRange: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
+    color: '#4B5563',
+  },
+
+  /* Center Empty/Error States (UI-31 Missing Schedule & Unavailable Data) */
+  centerStateContainer: {
+    alignItems: 'center',
+    paddingTop: 36,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+  },
+  bigStateIconCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#EDE8D5',
+    borderWidth: 1.2,
+    borderColor: '#DDD6BD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  stateTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    color: '#1A251D',
+    textAlign: 'center',
+    letterSpacing: -0.3,
+    marginBottom: 8,
+  },
+  stateSubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: '#5C6B5F',
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 310,
+    marginBottom: 24,
+  },
+  unknownAvailabilityCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#EDE8D5',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#DDD6BD',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  unknownAvailabilityHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  unknownAvailabilityTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 14.5,
+    color: '#1A251D',
+  },
+  unknownAvailabilitySub: {
+    fontFamily: FONTS.regular,
+    fontSize: 12.5,
+    color: '#5C6B5F',
+  },
+  stateActionsContainer: {
+    width: '100%',
+    maxWidth: 320,
+    gap: 12,
+  },
+  statePrimaryButton: {
+    backgroundColor: '#334839',
+    height: 52,
+    borderRadius: 26,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
+  },
+  statePrimaryButtonText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  stateSecondaryButton: {
+    backgroundColor: 'transparent',
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: '#334839',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  stateSecondaryButtonText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    color: '#334839',
+  },
+  feedbackBanner: {
+    backgroundColor: '#D9EFE0',
+    borderWidth: 1,
+    borderColor: '#8FCFA4',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  feedbackBannerText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#154B24',
+    textAlign: 'center',
+  },
+
+  /* Privacy Notice Detail Modal */
+  privacyModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  privacyModalContainer: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FAF7EE',
+    borderRadius: 20,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#DDD6BD',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 5,
+      },
+      web: {
+        boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+      },
+    }),
+  },
+  privacyModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  privacyModalTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 17,
+    color: '#172019',
+  },
+  privacyModalBody: {
+    fontFamily: FONTS.regular,
+    fontSize: 13.5,
+    color: '#4B584E',
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  privacyModalCloseBtn: {
+    backgroundColor: '#334839',
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privacyModalCloseBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14.5,
+    color: '#FFFFFF',
+  },
 });
 

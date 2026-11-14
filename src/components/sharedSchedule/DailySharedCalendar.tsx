@@ -7,7 +7,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Line } from 'react-native-svg';
 import { FONTS } from '../../constants/typography';
 import { COLORS } from '../../constants/colors';
 import {
@@ -135,7 +135,7 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                 <Text style={styles.friendNameText} numberOfLines={1}>
                   {friend.nickname || friend.name}
                 </Text>
-                {friend.isPrivate && (
+                {(friend.isPrivate || friend.scheduleState === 'privacy-restricted') && (
                   <Svg
                     width={11}
                     height={11}
@@ -157,6 +157,40 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                       d="M7 11V7a5 5 0 0 1 10 0v4"
                       stroke="#485B4C"
                       strokeWidth="2.4"
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                )}
+                {(friend.hasMissingSchedule || friend.scheduleState === 'missing') && (
+                  <Svg
+                    width={11}
+                    height={11}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    style={styles.lockIcon}
+                  >
+                    <Circle cx="12" cy="12" r="10" stroke="#7E6822" strokeWidth={2} />
+                    <Path
+                      d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"
+                      stroke="#7E6822"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                )}
+                {(friend.isUnavailable || friend.scheduleState === 'unavailable') && (
+                  <Svg
+                    width={11}
+                    height={11}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    style={styles.lockIcon}
+                  >
+                    <Circle cx="12" cy="12" r="10" stroke="#7E6822" strokeWidth={2} />
+                    <Path
+                      d="M12 16v-4M12 8h.01"
+                      stroke="#7E6822"
+                      strokeWidth={2.2}
                       strokeLinecap="round"
                     />
                   </Svg>
@@ -328,98 +362,180 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
             <View style={styles.columnsContainer} pointerEvents="box-none">
               {friends.map((friend) => {
                 const schedule = friend.scheduleByDate[dateKey] || [];
+                const isMissing =
+                  friend.hasMissingSchedule || friend.scheduleState === 'missing';
+                const isUnavailable =
+                  friend.isUnavailable || friend.scheduleState === 'unavailable';
+
                 return (
                   <View
                     key={`col-${friend.id}`}
                     style={styles.friendColumn}
                     pointerEvents="box-none"
                   >
-                    {schedule.map((item) => {
-                      if (!item.isBusy) return null;
+                    {isMissing ? (
+                      <TouchableOpacity
+                        style={styles.hatchedColumnContainer}
+                        onPress={() => onFriendPress?.(friend)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`No schedule shared for ${friend.name}. Tap to view.`}
+                      >
+                        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+                          {[...Array(24)].map((_, i) => (
+                            <Line
+                              key={i}
+                              x1={-20 + i * 16}
+                              y1="0"
+                              x2={i * 16}
+                              y2="580"
+                              stroke="#DDD5BD"
+                              strokeWidth="1.2"
+                            />
+                          ))}
+                        </Svg>
+                        <View style={styles.hatchedBadge}>
+                          <Svg width={11} height={11} viewBox="0 0 24 24" fill="none">
+                            <Circle cx="12" cy="12" r="10" stroke="#5C4A15" strokeWidth={2} />
+                            <Path
+                              d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"
+                              stroke="#5C4A15"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                            />
+                          </Svg>
+                          <Text style={styles.hatchedBadgeText}>Not shared</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : isUnavailable ? (
+                      <TouchableOpacity
+                        style={[styles.hatchedColumnContainer, styles.unavailableColumnContainer]}
+                        onPress={() => onFriendPress?.(friend)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Schedule unavailable for ${friend.name}. Tap to retry.`}
+                      >
+                        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+                          {[...Array(24)].map((_, i) => (
+                            <Line
+                              key={i}
+                              x1={-20 + i * 16}
+                              y1="0"
+                              x2={i * 16}
+                              y2="580"
+                              stroke="#D4DDD6"
+                              strokeWidth="1.2"
+                            />
+                          ))}
+                        </Svg>
+                        <View style={styles.hatchedBadge}>
+                          <Svg width={11} height={11} viewBox="0 0 24 24" fill="none">
+                            <Circle cx="12" cy="12" r="10" stroke="#5C4A15" strokeWidth={2} />
+                            <Path
+                              d="M12 16v-4M12 8h.01"
+                              stroke="#5C4A15"
+                              strokeWidth={2.2}
+                              strokeLinecap="round"
+                            />
+                          </Svg>
+                          <Text style={styles.hatchedBadgeText}>Unavailable</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : (
+                      schedule.map((item) => {
+                        if (!item.isBusy) return null;
 
-                      const clampedStart = Math.max(START_HOUR, item.startHour);
-                      const clampedEnd = Math.min(END_HOUR, item.endHour);
-                      const duration = Math.max(0.5, clampedEnd - clampedStart);
+                        const clampedStart = Math.max(START_HOUR, item.startHour);
+                        const clampedEnd = Math.min(END_HOUR, item.endHour);
+                        const duration = Math.max(0.5, clampedEnd - clampedStart);
 
-                      const blockTop =
-                        (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
-                      const blockHeight = duration * HOUR_HEIGHT - 4;
+                        const blockTop =
+                          (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
+                        const blockHeight = duration * HOUR_HEIGHT - 4;
 
-                      const palette =
-                        GREEN_TILE_PALETTES[item.colorVariant || 'forest'];
+                        const isItemPrivate =
+                          item.isPrivate ||
+                          friend.isPrivate ||
+                          friend.scheduleState === 'privacy-restricted';
+                        const displayTitle = isItemPrivate ? 'Busy' : item.title;
 
-                      return (
-                        <TouchableOpacity
-                          key={item.id}
-                          style={[
-                            styles.scheduleTile,
-                            {
-                              top: blockTop,
-                              height: blockHeight,
-                              backgroundColor: palette.bg,
-                              borderLeftColor: palette.border,
-                            },
-                          ]}
-                          onPress={() =>
-                            onScheduleItemPress?.(item, friend)
-                          }
-                          activeOpacity={0.8}
-                          accessibilityLabel={`${item.title}, ${
-                            item.timeRange || `${item.startTime} to ${item.endTime}`
-                          }`}
-                        >
-                          {/* Tile Title Row with Optional Lock */}
-                          <View style={styles.tileTitleRow}>
-                            {item.isPrivate && (
-                              <Svg
-                                width={10}
-                                height={10}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                style={{ marginRight: 3 }}
+                        const palette = isItemPrivate
+                          ? GREEN_TILE_PALETTES.busy
+                          : GREEN_TILE_PALETTES[item.colorVariant || 'forest'];
+
+                        return (
+                          <TouchableOpacity
+                            key={item.id}
+                            style={[
+                              styles.scheduleTile,
+                              {
+                                top: blockTop,
+                                height: blockHeight,
+                                backgroundColor: palette.bg,
+                                borderLeftColor: palette.border,
+                              },
+                            ]}
+                            onPress={() =>
+                              onScheduleItemPress?.(item, friend)
+                            }
+                            activeOpacity={0.8}
+                            accessibilityLabel={`${displayTitle}, ${
+                              item.timeRange || `${item.startTime} to ${item.endTime}`
+                            }`}
+                          >
+                            {/* Tile Title Row with Optional Lock */}
+                            <View style={styles.tileTitleRow}>
+                              {isItemPrivate && (
+                                <Svg
+                                  width={10}
+                                  height={10}
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  style={{ marginRight: 3 }}
+                                >
+                                  <Rect
+                                    x="3"
+                                    y="11"
+                                    width="18"
+                                    height="11"
+                                    rx="2"
+                                    stroke="#364A3B"
+                                    strokeWidth={2.2}
+                                  />
+                                  <Path
+                                    d="M7 11V7a5 5 0 0 1 10 0v4"
+                                    stroke="#364A3B"
+                                    strokeWidth={2.2}
+                                    strokeLinecap="round"
+                                  />
+                                </Svg>
+                              )}
+                              <Text
+                                style={[
+                                  styles.tileTitle,
+                                  { color: palette.title },
+                                ]}
+                                numberOfLines={1}
                               >
-                                <Rect
-                                  x="3"
-                                  y="11"
-                                  width="18"
-                                  height="11"
-                                  rx="2"
-                                  stroke="#364A3B"
-                                  strokeWidth="2.2"
-                                />
-                                <Path
-                                  d="M7 11V7a5 5 0 0 1 10 0v4"
-                                  stroke="#364A3B"
-                                  strokeWidth="2.2"
-                                  strokeLinecap="round"
-                                />
-                              </Svg>
-                            )}
+                                {displayTitle}
+                              </Text>
+                            </View>
+
+                            {/* Tile Time Range */}
                             <Text
                               style={[
-                                styles.tileTitle,
-                                { color: palette.title },
+                                styles.tileTimeRange,
+                                { color: palette.time },
                               ]}
                               numberOfLines={1}
                             >
-                              {item.title}
+                              {item.timeRange ||
+                                `${item.startTime.split(' ')[0]}–${item.endTime.split(' ')[0]}`}
                             </Text>
-                          </View>
-
-                          {/* Tile Time Range */}
-                          <Text
-                            style={[
-                              styles.tileTimeRange,
-                              { color: palette.time },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {item.timeRange ||
-                              `${item.startTime.split(' ')[0]}–${item.endTime.split(' ')[0]}`}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
                   </View>
                 );
               })}
@@ -702,5 +818,55 @@ const styles = StyleSheet.create({
     color: '#55695A',
     textAlign: 'center',
     lineHeight: 18,
+  },
+
+  /* 7. SS-06 Hatched Column Indicators */
+  hatchedColumnContainer: {
+    position: 'absolute',
+    top: 2,
+    bottom: 2,
+    left: 1,
+    right: 1,
+    borderRadius: 8,
+    backgroundColor: '#F5EFCB',
+    borderWidth: 1,
+    borderColor: '#E6DDB5',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unavailableColumnContainer: {
+    backgroundColor: '#EAEFE9',
+    borderColor: '#D4DDD5',
+  },
+  hatchedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingHorizontal: 6,
+    paddingVertical: 3.5,
+    borderRadius: 10,
+    gap: 4,
+    borderWidth: 0.8,
+    borderColor: '#D8CFB0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+      },
+    }),
+  },
+  hatchedBadgeText: {
+    fontFamily: FONTS.bold,
+    fontSize: 10,
+    color: '#5C4A15',
   },
 });
