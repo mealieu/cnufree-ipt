@@ -107,8 +107,27 @@ export interface DailyCalendarProps {
   overlappingWindows?: OverlappingFreeWindow[];
   onFriendPress?: (friend: SharedCalendarFriend) => void; // SS-05 architectural context
   onScheduleItemPress?: (item: SharedScheduleItem, friend: SharedCalendarFriend) => void;
+  onFreeWindowPress?: (window: OverlappingFreeWindow) => void; // SS-04 overlapping free period visual interaction
   showCurrentTimeIndicator?: boolean;
   highlightFreeWindows?: boolean;
+  selectedWindowId?: string | null;
+}
+
+export interface CommonFreeTimeModalProps {
+  visible: boolean;
+  onClose: () => void;
+  window: OverlappingFreeWindow | null;
+  friends: SharedCalendarFriend[];
+  date: Date;
+  isEmptyState?: boolean;
+  onSwitchToWeek?: () => void;
+}
+
+export interface SharedFreeWindowBannerProps {
+  freeWindows: OverlappingFreeWindow[];
+  currentDate?: Date;
+  onPressBanner?: () => void;
+  isHighlighted?: boolean;
 }
 
 export interface SharedDateNavigationProps {

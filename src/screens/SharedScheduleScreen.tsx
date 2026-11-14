@@ -25,6 +25,7 @@ import {
   SharedViewMode,
   WeeklyCalendarLayoutMode,
   SharedScheduleScreenProps,
+  OverlappingFreeWindow,
 } from '../types/sharedSchedule';
 import {
   MOCK_TODAY_DATE,
@@ -40,6 +41,7 @@ import { SharedFreeWindowBanner } from '../components/sharedSchedule/SharedFreeW
 import { DailySharedCalendar } from '../components/sharedSchedule/DailySharedCalendar';
 import { WeeklySharedCalendar } from '../components/sharedSchedule/WeeklySharedCalendar';
 import { FriendGroupSelectorModal } from '../components/sharedSchedule/FriendGroupSelectorModal';
+import { CommonFreeTimeModal } from '../components/sharedSchedule/CommonFreeTimeModal';
 
 export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
   onNavigateTab,
@@ -60,6 +62,12 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
 
   // 4. Free Window Highlight Toggle
   const [highlightFreeWindows, setHighlightFreeWindows] = useState<boolean>(true);
+
+  // 4B. Selected Free Window Modal State (SS-04)
+  const [selectedFreeWindow, setSelectedFreeWindow] =
+    useState<OverlappingFreeWindow | null>(null);
+  const [isEmptyFreeTimeModalOpen, setIsEmptyFreeTimeModalOpen] =
+    useState<boolean>(false);
 
   // 5. Selected Schedule Item Modal State
   const [selectedItemModal, setSelectedItemModal] = useState<{
@@ -252,13 +260,18 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
             />
           ) : (
             <>
-              {/* ================= 5A. OVERLAPPING FREE WINDOW BANNER ================= */}
-              {allFreeWindows.length > 0 && activeGroup.members.length > 0 && (
+              {/* ================= 5A. OVERLAPPING FREE WINDOW BANNER (SS-04) ================= */}
+              {activeGroup.members.length > 0 && (
                 <SharedFreeWindowBanner
                   freeWindows={allFreeWindows}
-                  onPressBanner={() =>
-                    setHighlightFreeWindows((prev) => !prev)
-                  }
+                  currentDate={currentDate}
+                  onPressBanner={() => {
+                    if (allFreeWindows.length > 0) {
+                      setSelectedFreeWindow(allFreeWindows[0]);
+                    } else {
+                      setIsEmptyFreeTimeModalOpen(true);
+                    }
+                  }}
                   isHighlighted={highlightFreeWindows}
                 />
               )}
@@ -270,6 +283,8 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
                 friends={activeGroup.members}
                 overlappingWindows={combinedWindows}
                 highlightFreeWindows={highlightFreeWindows}
+                selectedWindowId={selectedFreeWindow?.id}
+                onFreeWindowPress={(window) => setSelectedFreeWindow(window)}
                 onFriendPress={(friend) => setSelectedFriendModal(friend)}
                 onScheduleItemPress={(item, friend) =>
                   setSelectedItemModal({ item, friend })
@@ -435,6 +450,20 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
         groups={SHARED_FRIEND_GROUPS}
         selectedGroupId={selectedGroupId}
         onSelectGroup={(g) => setSelectedGroupId(g.id)}
+      />
+
+      {/* ================= 11. COMMON FREE TIME BOTTOM SHEET MODAL (SS-04) ================= */}
+      <CommonFreeTimeModal
+        visible={!!selectedFreeWindow || isEmptyFreeTimeModalOpen}
+        onClose={() => {
+          setSelectedFreeWindow(null);
+          setIsEmptyFreeTimeModalOpen(false);
+        }}
+        window={selectedFreeWindow}
+        friends={activeGroup.members}
+        date={currentDate}
+        isEmptyState={isEmptyFreeTimeModalOpen}
+        onSwitchToWeek={() => setViewMode('week')}
       />
     </SafeAreaView>
   );
@@ -647,4 +676,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-

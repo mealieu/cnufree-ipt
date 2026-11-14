@@ -81,8 +81,10 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
   overlappingWindows = [],
   onFriendPress,
   onScheduleItemPress,
+  onFreeWindowPress,
   showCurrentTimeIndicator = true,
   highlightFreeWindows = true,
+  selectedWindowId,
 }) => {
   // Current time position (reference: 10:15 AM = 10.25)
   const currentTimeHour = 10.25;
@@ -246,13 +248,15 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
               />
             ))}
 
-            {/* Overlapping All-Free Bands (Architectural slot for SS-04) */}
+            {/* Overlapping All-Free Bands (SS-04 Visual Indicators) */}
             {highlightFreeWindows &&
               allFreeWindows.map((fw) => {
                 const top = (fw.startHour - START_HOUR) * HOUR_HEIGHT;
                 const height = (fw.endHour - fw.startHour) * HOUR_HEIGHT;
+                const isSelected = selectedWindowId === fw.id;
+
                 return (
-                  <View
+                  <TouchableOpacity
                     key={fw.id}
                     style={[
                       styles.freeWindowBand,
@@ -260,7 +264,12 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                         top,
                         height,
                       },
+                      isSelected && styles.freeWindowBandSelected,
                     ]}
+                    onPress={() => onFreeWindowPress?.(fw)}
+                    activeOpacity={0.8}
+                    accessibilityLabel={`Common free time: ${fw.timeRange}, ${fw.label}`}
+                    accessibilityRole="button"
                   >
                     <View style={styles.freeBandBadgeRow}>
                       <View style={styles.allFreePill}>
@@ -283,34 +292,48 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                       </View>
                     </View>
                     <Text style={styles.freeBandTimeText}>{fw.timeRange}</Text>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
 
-            {/* Partial Free Pills (e.g. "3 of 4") (Architectural slot for SS-04) */}
+            {/* Partial Free Pills (e.g. "3 of 4") (SS-04 Visual Indicators) */}
             {highlightFreeWindows &&
               partialWindows.map((pfw) => {
                 const top = (pfw.startHour - START_HOUR) * HOUR_HEIGHT + 4;
+                const isSelected = selectedWindowId === pfw.id;
+
                 return (
-                  <View
+                  <TouchableOpacity
                     key={pfw.id}
-                    style={[styles.partialFreePillContainer, { top }]}
+                    style={[
+                      styles.partialFreePillContainer,
+                      { top },
+                      isSelected && styles.partialFreePillContainerSelected,
+                    ]}
+                    onPress={() => onFreeWindowPress?.(pfw)}
+                    activeOpacity={0.8}
+                    accessibilityLabel={`Partial free period: ${pfw.timeRange}, ${pfw.label}`}
+                    accessibilityRole="button"
                   >
                     <View style={styles.partialFreePill}>
                       <Text style={styles.partialFreePillText}>
                         {pfw.label}
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
 
-            {/* Friend Columns with Schedule Tiles */}
-            <View style={styles.columnsContainer}>
+            {/* Friend Columns with Schedule Tiles (pointerEvents="box-none" allows clicks to pass to freeWindowBand) */}
+            <View style={styles.columnsContainer} pointerEvents="box-none">
               {friends.map((friend) => {
                 const schedule = friend.scheduleByDate[dateKey] || [];
                 return (
-                  <View key={`col-${friend.id}`} style={styles.friendColumn}>
+                  <View
+                    key={`col-${friend.id}`}
+                    style={styles.friendColumn}
+                    pointerEvents="box-none"
+                  >
                     {schedule.map((item) => {
                       if (!item.isBusy) return null;
 
@@ -361,13 +384,13 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                                   width="18"
                                   height="11"
                                   rx="2"
-                                  stroke={palette.title}
-                                  strokeWidth="2.5"
+                                  stroke="#364A3B"
+                                  strokeWidth="2.2"
                                 />
                                 <Path
                                   d="M7 11V7a5 5 0 0 1 10 0v4"
-                                  stroke={palette.title}
-                                  strokeWidth="2.5"
+                                  stroke="#364A3B"
+                                  strokeWidth="2.2"
                                   strokeLinecap="round"
                                 />
                               </Svg>
@@ -383,7 +406,7 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                             </Text>
                           </View>
 
-                          {/* Time Range */}
+                          {/* Tile Time Range */}
                           <Text
                             style={[
                               styles.tileTimeRange,
@@ -392,7 +415,7 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
                             numberOfLines={1}
                           >
                             {item.timeRange ||
-                              `${item.startTime}–${item.endTime}`}
+                              `${item.startTime.split(' ')[0]}–${item.endTime.split(' ')[0]}`}
                           </Text>
                         </TouchableOpacity>
                       );
@@ -402,13 +425,14 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
               })}
             </View>
 
-            {/* Current Time Indicator Line (e.g. 10:15 AM) */}
+            {/* Current Time Horizontal Line Indicator (10:15 AM) */}
             {showCurrentTimeIndicator && (
               <View
                 style={[
                   styles.currentTimeLineContainer,
                   { top: currentTimeTop },
                 ]}
+                pointerEvents="none"
               >
                 <View style={styles.currentTimeKnob} />
                 <View style={styles.currentTimeLine} />
@@ -424,79 +448,77 @@ export const DailySharedCalendar: React.FC<DailyCalendarProps> = ({
 const styles = StyleSheet.create({
   calendarContainer: {
     paddingHorizontal: 12,
-    marginTop: 6,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
 
-  /* 1. Friends Header Row */
+  /* 1. Friend Column Headers */
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   timeAxisSpacer: {
-    width: 44,
+    width: 44, // Matches timeAxisColumn width
   },
   friendHeadersContainer: {
     flex: 1,
     flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   friendHeaderCol: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: 2,
+    paddingVertical: 4,
   },
   avatarCircle: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#566859',
+    backgroundColor: '#617466',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
   },
   avatarText: {
     fontFamily: FONTS.bold,
-    fontSize: 10,
+    fontSize: 10.5,
     color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
   },
   friendNameText: {
     fontFamily: FONTS.bold,
-    fontSize: 13,
-    color: '#16251A',
-    letterSpacing: -0.2,
+    fontSize: 11.5,
+    color: '#213326',
+    maxWidth: 58,
   },
   lockIcon: {
-    marginTop: 1,
+    marginLeft: 2,
   },
 
-  /* 2. Timeline Grid Layout */
+  /* 2. Timeline Grid */
   timelineGridWrapper: {
     flexDirection: 'row',
-    position: 'relative',
+    marginTop: 4,
   },
   timeAxisColumn: {
     width: 44,
     position: 'relative',
-    marginRight: 4,
   },
   timeAxisItem: {
     position: 'absolute',
     left: 0,
-    right: 0,
+    width: 40,
     alignItems: 'flex-start',
   },
   timeAxisLabel: {
     fontFamily: FONTS.medium,
-    fontSize: 11,
-    color: '#556858',
+    fontSize: 10,
+    color: '#718274',
     letterSpacing: 0.1,
   },
   gridContentArea: {
@@ -511,12 +533,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#DFE5DD',
   },
 
-  /* 3. Free Period Bands & Indicators (Architectural Context for SS-04) */
+  /* 3. Free Period Bands & Indicators (SS-04) */
   freeWindowBand: {
     position: 'absolute',
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(215, 239, 222, 0.55)',
+    backgroundColor: 'rgba(215, 239, 222, 0.62)',
     borderLeftWidth: 3.5,
     borderLeftColor: '#354839',
     borderRadius: 6,
@@ -524,6 +546,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     justifyContent: 'center',
     zIndex: 1,
+  },
+  freeWindowBandSelected: {
+    backgroundColor: 'rgba(195, 233, 206, 0.85)',
+    borderLeftColor: '#1A5A31',
+    borderLeftWidth: 5,
   },
   freeBandBadgeRow: {
     flexDirection: 'row',
@@ -552,6 +579,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
     zIndex: 3,
+  },
+  partialFreePillContainerSelected: {
+    transform: [{ scale: 1.08 }],
   },
   partialFreePill: {
     backgroundColor: '#E4ECE2',
@@ -674,4 +704,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-
