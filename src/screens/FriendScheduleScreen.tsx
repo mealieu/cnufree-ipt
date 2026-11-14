@@ -10,8 +10,9 @@ import {
   StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { FriendAvailability, FriendScheduleItem } from '../types/dashboard';
+import { SharedCalendarFriend } from '../types/sharedSchedule';
 import { COLORS } from '../constants/colors';
 import { FONTS } from '../constants/typography';
 import { UserAvatarSilhouette } from '../components/icons/NavIcons';
@@ -20,12 +21,22 @@ import {
   DayScheduleTab,
   getWeeklySchedule,
 } from '../mock/dashboardData';
+import {
+  MOCK_TODAY_DATE,
+  formatDateKey,
+  findSharedFriendById,
+  getChronologicalScheduleForDay,
+} from '../mock/sharedScheduleData';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { TabId } from '../types/navigation';
 
-interface FriendScheduleScreenProps {
-  friend?: FriendAvailability | null;
+export interface FriendScheduleScreenProps {
+  friend?: FriendAvailability | SharedCalendarFriend | null;
+  friendId?: string;
   onBack?: () => void;
+  onNavigateTab?: (tab: TabId) => void;
+  initialDate?: Date;
+  sourceScreen?: 'shared' | 'home' | 'friends';
 }
 
 const HOUR_HEIGHT = 58;
@@ -47,13 +58,60 @@ const TIMELINE_HOURS = [
   { hour: 18, label: '6 PM' },
 ];
 
+function formatHeaderDateTitle(date: Date): string {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  const dayName = dayNames[date.getDay()];
+  const monthName = monthNames[date.getMonth()];
+  const dayNum = date.getDate();
+  return `${dayName}, ${monthName} ${dayNum}`;
+}
+
+function formatHeaderDateSubtitle(date: Date): string {
+  const isToday =
+    date.getFullYear() === MOCK_TODAY_DATE.getFullYear() &&
+    date.getMonth() === MOCK_TODAY_DATE.getMonth() &&
+    date.getDate() === MOCK_TODAY_DATE.getDate();
+  const year = date.getFullYear();
+  return isToday ? `Today · ${year}` : `${year}`;
+}
+
 export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
   friend,
+  friendId,
   onBack = () => console.log('Navigate back'),
+  onNavigateTab,
+  initialDate,
+  sourceScreen,
 }) => {
-  // Fallback to Maria Deborah sample if friend is not provided
+  // Check if opened from Shared Tracker (SS-05 / UI-30)
+  const isFromSharedTracker = sourceScreen === 'shared';
+
+  // Date state for Shared Tracker navigation
+  const [sharedDate, setSharedDate] = useState<Date>(
+    initialDate || MOCK_TODAY_DATE
+  );
+  const [sharedViewMode, setSharedViewMode] = useState<'day' | 'week'>('day');
+
+  // Resolve Shared Friend by object or unique identifier (SS-05)
+  const sharedFriend: SharedCalendarFriend | undefined = useMemo(() => {
+    if (!isFromSharedTracker) return undefined;
+    if (friend && 'scheduleByDate' in friend) {
+      return friend as SharedCalendarFriend;
+    }
+    const targetId = friendId || (friend && 'id' in friend ? friend.id : undefined);
+    if (targetId) {
+      return findSharedFriendById(targetId);
+    }
+    return undefined;
+  }, [isFromSharedTracker, friend, friendId]);
+
+  // Fallback to Maria Deborah sample if friend is not provided for standard Home/Friends view
   const activeFriend: FriendAvailability = useMemo(() => {
-    return friend ?? SAMPLE_FRIEND_MARIA_DEBORAH;
+    return (friend as FriendAvailability) ?? SAMPLE_FRIEND_MARIA_DEBORAH;
   }, [friend]);
 
   // State for view controls (Daily vs Weekly) - Defaults to 'weekly' to match Figma screenshot exactly
@@ -150,6 +208,473 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
       setSelectedDayId('mon');
     }
   }, [currentWeekSchedule, selectedDayId]);
+
+  // =========================================================================
+  // SS-05 (UI-30): INDIVIDUAL FRIEND SCHEDULE FROM SHARED TRACKER
+  // =========================================================================
+  if (isFromSharedTracker) {
+    if (!sharedFriend) {
+      return (
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="dark" />
+          <View style={styles.contentContainer}>
+            <View style={styles.sharedHeaderRow}>
+              <TouchableOpacity
+                onPress={onBack}
+                style={styles.sharedBackButton}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Back to Shared Tracker"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 19L8 12L15 5"
+                    stroke="#1B271E"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <Text style={styles.sharedBackTitle}>Shared Tracker</Text>
+            </View>
+
+            <View style={styles.sharedUnavailableContainer}>
+              <Svg width={40} height={40} viewBox="0 0 24 24" fill="none">
+                <Circle cx="12" cy="12" r="10" stroke="#5C6B5F" strokeWidth={1.8} />
+                <Path
+                  d="M12 8v5M12 16h.01"
+                  stroke="#5C6B5F"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <Text style={styles.sharedUnavailableTitle}>
+                Friend Schedule Unavailable
+              </Text>
+              <Text style={styles.sharedUnavailableText}>
+                We could not find schedule details for this friend in the shared calendar.
+              </Text>
+              <TouchableOpacity
+                style={styles.sharedReturnButton}
+                onPress={onBack}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.sharedReturnButtonText}>
+                  Return to Shared Tracker
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <BottomNavBar
+            activeTab="shared"
+            onTabChange={(tab) => {
+              if (tab === 'shared') {
+                onBack?.();
+              } else {
+                onNavigateTab?.(tab);
+              }
+            }}
+            notificationBadgeCount={0}
+          />
+        </SafeAreaView>
+      );
+    }
+
+    const sharedDateKey = formatDateKey(sharedDate);
+    const formattedDateTitle = formatHeaderDateTitle(sharedDate);
+    const formattedDateSubtitle = formatHeaderDateSubtitle(sharedDate);
+
+    const chronologicalSlots = getChronologicalScheduleForDay(
+      sharedFriend,
+      sharedDateKey
+    );
+
+    const hasMissingSchedule = sharedFriend.hasMissingSchedule === true;
+    const isPrivateSchedule = sharedFriend.isPrivate === true;
+
+    const statusBadgeText = hasMissingSchedule
+      ? 'No schedule'
+      : isPrivateSchedule
+        ? 'Partial schedule'
+        : 'Full schedule';
+
+    const handleSharedPrevDay = () => {
+      setSharedDate((prev) => {
+        const d = new Date(prev);
+        d.setDate(d.getDate() - 1);
+        return d;
+      });
+    };
+
+    const handleSharedNextDay = () => {
+      setSharedDate((prev) => {
+        const d = new Date(prev);
+        d.setDate(d.getDate() + 1);
+        return d;
+      });
+    };
+
+    const handleSharedToday = () => {
+      setSharedDate(MOCK_TODAY_DATE);
+    };
+
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.contentContainer}>
+            {/* Header: < Shared Tracker */}
+            <View style={styles.sharedHeaderRow}>
+              <TouchableOpacity
+                onPress={onBack}
+                style={styles.sharedBackButton}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Back to Shared Tracker"
+              >
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 19L8 12L15 5"
+                    stroke="#1B271E"
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <Text style={styles.sharedBackTitle}>Shared Tracker</Text>
+            </View>
+
+            {/* Profile Section: Avatar, Name, Subtitle, Full schedule pill */}
+            <View style={styles.sharedProfileSection}>
+              <View style={styles.sharedAvatarCircle}>
+                <Text style={styles.sharedAvatarText}>
+                  {sharedFriend.initials ||
+                    sharedFriend.name.slice(0, 2).toUpperCase()}
+                </Text>
+              </View>
+
+              <View style={styles.sharedProfileInfo}>
+                <Text style={styles.sharedFriendName}>{sharedFriend.name}</Text>
+                <Text style={styles.sharedFriendSubtitle}>
+                  Individual schedule
+                </Text>
+              </View>
+
+              <View style={styles.sharedStatusBadge}>
+                {!hasMissingSchedule && !isPrivateSchedule && (
+                  <Svg
+                    width={13}
+                    height={13}
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    style={{ marginRight: 5 }}
+                  >
+                    <Path
+                      d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                      stroke="#1B271E"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                )}
+                {isPrivateSchedule && (
+                  <Svg
+                    width={12}
+                    height={12}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    style={{ marginRight: 5 }}
+                  >
+                    <Rect
+                      x="3"
+                      y="11"
+                      width="18"
+                      height="11"
+                      rx="2"
+                      stroke="#1B271E"
+                      strokeWidth={2.2}
+                    />
+                    <Path
+                      d="M7 11V7a5 5 0 0 1 10 0v4"
+                      stroke="#1B271E"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                )}
+                <Text style={styles.sharedStatusBadgeText}>
+                  {statusBadgeText}
+                </Text>
+              </View>
+            </View>
+
+            {/* Date Navigation Row: Mon, Oct 19 / Today · 2026, [Today] [<] [>] */}
+            <View style={styles.sharedDateNavRow}>
+              <View>
+                <Text style={styles.sharedDateTitle}>{formattedDateTitle}</Text>
+                <Text style={styles.sharedDateSubtitle}>
+                  {formattedDateSubtitle}
+                </Text>
+              </View>
+
+              <View style={styles.sharedDateNavControls}>
+                <TouchableOpacity
+                  style={styles.sharedTodayButton}
+                  onPress={handleSharedToday}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.sharedTodayButtonText}>Today</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.sharedNavArrowButton}
+                  onPress={handleSharedPrevDay}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Previous day"
+                >
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M15 19L8 12L15 5"
+                      stroke="#1B271E"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.sharedNavArrowButton}
+                  onPress={handleSharedNextDay}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Next day"
+                >
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M9 5L16 12L9 19"
+                      stroke="#1B271E"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Day / Week View Toggle */}
+            <View style={styles.sharedToggleContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.sharedToggleOption,
+                  sharedViewMode === 'day' && styles.sharedToggleOptionActive,
+                ]}
+                onPress={() => setSharedViewMode('day')}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.sharedToggleText,
+                    sharedViewMode === 'day'
+                      ? styles.sharedToggleTextActive
+                      : styles.sharedToggleTextInactive,
+                  ]}
+                >
+                  Day
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.sharedToggleOption,
+                  sharedViewMode === 'week' && styles.sharedToggleOptionActive,
+                ]}
+                onPress={() => setSharedViewMode('week')}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.sharedToggleText,
+                    sharedViewMode === 'week'
+                      ? styles.sharedToggleTextActive
+                      : styles.sharedToggleTextInactive,
+                  ]}
+                >
+                  Week
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Content: Missing Schedule or Timeline */}
+            {hasMissingSchedule ? (
+              <View style={styles.sharedUnavailableContainer}>
+                <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
+                  <Circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#5C6B5F"
+                    strokeWidth={1.8}
+                  />
+                  <Path
+                    d="M12 8v5M12 16h.01"
+                    stroke="#5C6B5F"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+                <Text style={styles.sharedUnavailableTitle}>
+                  No Schedule Available
+                </Text>
+                <Text style={styles.sharedUnavailableText}>
+                  {sharedFriend.name} has not uploaded or connected their
+                  schedule yet.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.timelineBox}>
+                {/* Left Column: Vertical Time Axis */}
+                <View style={styles.timeAxisColumn}>
+                  {TIMELINE_HOURS.map((item, index) => (
+                    <View
+                      key={item.hour}
+                      style={[
+                        styles.timeAxisItem,
+                        { top: index * HOUR_HEIGHT - 7 },
+                      ]}
+                    >
+                      <Text style={styles.timeAxisLabel}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Right Column: Grid Lines and Blocks */}
+                <View
+                  style={[
+                    styles.scheduleGridArea,
+                    { height: TOTAL_HOURS * HOUR_HEIGHT },
+                  ]}
+                >
+                  {TIMELINE_HOURS.map((item, index) => (
+                    <View
+                      key={`line-${item.hour}`}
+                      style={[styles.gridLine, { top: index * HOUR_HEIGHT }]}
+                    />
+                  ))}
+
+                  {chronologicalSlots.map((item) => {
+                    const clampedStart = Math.max(START_HOUR, item.startHour);
+                    const clampedEnd = Math.min(END_HOUR, item.endHour);
+                    const duration = Math.max(0.5, clampedEnd - clampedStart);
+                    const blockTop =
+                      (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
+                    const blockHeight = duration * HOUR_HEIGHT - 4;
+
+                    if (item.isBusy) {
+                      return (
+                        <View
+                          key={item.id}
+                          style={[
+                            styles.sharedBusyBlock,
+                            {
+                              top: blockTop,
+                              height: blockHeight,
+                            },
+                          ]}
+                        >
+                          <View style={styles.sharedBusyTopRow}>
+                            <Text
+                              style={styles.sharedBusyTitle}
+                              numberOfLines={1}
+                            >
+                              {item.title}
+                            </Text>
+                            <Text style={styles.sharedBusyTimeRange}>
+                              {item.timeRange ||
+                                `${item.startTime}–${item.endTime}`}
+                            </Text>
+                          </View>
+                          {item.room && (
+                            <Text
+                              style={styles.sharedBusyRoom}
+                              numberOfLines={1}
+                            >
+                              {item.room}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View
+                        key={item.id}
+                        style={[
+                          styles.sharedFreeBlock,
+                          {
+                            top: blockTop,
+                            height: blockHeight,
+                          },
+                        ]}
+                      >
+                        <View style={styles.sharedFreeContentRow}>
+                          <Svg
+                            width={14}
+                            height={14}
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            style={styles.sharedFreeCheckIcon}
+                          >
+                            <Path
+                              d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                              stroke="#2C3A2E"
+                              strokeWidth={2.2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </Svg>
+                          <Text
+                            style={styles.sharedFreeText}
+                            numberOfLines={1}
+                          >
+                            {item.title}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Bottom Nav Bar */}
+        <BottomNavBar
+          activeTab="shared"
+          onTabChange={(tab) => {
+            if (tab === 'shared') {
+              onBack?.();
+            } else {
+              onNavigateTab?.(tab);
+            }
+          }}
+          notificationBadgeCount={0}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -905,5 +1430,255 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: 12,
     color: '#5B6874',
+  },
+
+  /* UI-30 Shared Tracker Mode Styles (SS-05) */
+  sharedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  },
+  sharedBackButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EBEBE0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  sharedBackTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 18,
+    color: '#1B271E',
+    letterSpacing: -0.2,
+  },
+  sharedProfileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  sharedAvatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#617065',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sharedAvatarText: {
+    fontFamily: FONTS.bold,
+    fontSize: 18,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  sharedProfileInfo: {
+    flex: 1,
+  },
+  sharedFriendName: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    color: '#172019',
+    letterSpacing: -0.3,
+  },
+  sharedFriendSubtitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#5C6B5F',
+    marginTop: 2,
+  },
+  sharedStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EAE6CF',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  sharedStatusBadgeText: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
+    color: '#1B271E',
+  },
+  sharedDateNavRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 2,
+  },
+  sharedDateTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    color: '#172019',
+    letterSpacing: -0.4,
+  },
+  sharedDateSubtitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#5C6B5F',
+    marginTop: 2,
+  },
+  sharedDateNavControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sharedTodayButton: {
+    backgroundColor: '#E6E9DE',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  sharedTodayButtonText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#172019',
+  },
+  sharedNavArrowButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E6E9DE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sharedToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#EAEBE5',
+    borderRadius: 22,
+    padding: 3,
+    marginBottom: 16,
+  },
+  sharedToggleOption: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sharedToggleOptionActive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D8DCD3',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+      },
+    }),
+  },
+  sharedToggleText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
+  sharedToggleTextActive: {
+    color: '#172019',
+  },
+  sharedToggleTextInactive: {
+    color: '#637266',
+  },
+  sharedFreeBlock: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    borderWidth: 1.2,
+    borderStyle: 'dashed',
+    borderColor: '#B9C7B7',
+    borderRadius: 10,
+    backgroundColor: 'rgba(238, 242, 235, 0.65)',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  sharedFreeContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sharedFreeCheckIcon: {
+    marginRight: 6,
+  },
+  sharedFreeText: {
+    fontFamily: FONTS.medium,
+    fontSize: 12.5,
+    color: '#28362B',
+  },
+  sharedBusyBlock: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    backgroundColor: '#D1D7CE',
+    borderLeftWidth: 4,
+    borderLeftColor: '#36473A',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    justifyContent: 'center',
+  },
+  sharedBusyTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sharedBusyTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 13.5,
+    color: '#172019',
+  },
+  sharedBusyTimeRange: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
+    color: '#4A584D',
+  },
+  sharedBusyRoom: {
+    fontFamily: FONTS.regular,
+    fontSize: 11.5,
+    color: '#5C6B5F',
+    marginTop: 2,
+  },
+  sharedUnavailableContainer: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(230, 235, 227, 0.5)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D4DDD1',
+    marginVertical: 24,
+  },
+  sharedUnavailableTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 17,
+    color: '#172019',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  sharedUnavailableText: {
+    fontFamily: FONTS.regular,
+    fontSize: 13.5,
+    color: '#5C6B5F',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  sharedReturnButton: {
+    backgroundColor: '#27382B',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  sharedReturnButtonText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13.5,
+    color: '#FFFFFF',
   },
 });

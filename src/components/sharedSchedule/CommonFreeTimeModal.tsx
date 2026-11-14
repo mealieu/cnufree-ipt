@@ -26,6 +26,7 @@ export const CommonFreeTimeModal: React.FC<CommonFreeTimeModalProps> = ({
   date,
   isEmptyState = false,
   onSwitchToWeek,
+  onFriendPress,
 }) => {
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -205,7 +206,17 @@ export const CommonFreeTimeModal: React.FC<CommonFreeTimeModalProps> = ({
                 <View style={styles.friendsList}>
                   {friendStatuses.map(
                     ({ friend, isFree, isPrivate, busyTitle }) => (
-                      <View key={friend.id} style={styles.friendRow}>
+                      <TouchableOpacity
+                        key={friend.id}
+                        style={styles.friendRow}
+                        onPress={() => {
+                          onClose();
+                          onFriendPress?.(friend);
+                        }}
+                        activeOpacity={onFriendPress ? 0.75 : 1}
+                        accessibilityLabel={`View schedule for ${friend.name}`}
+                        accessibilityRole="button"
+                      >
                         {/* Initials Avatar */}
                         <View style={styles.avatarCircle}>
                           <Text style={styles.avatarInitials}>
@@ -277,7 +288,7 @@ export const CommonFreeTimeModal: React.FC<CommonFreeTimeModalProps> = ({
                             </View>
                           )}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     )
                   )}
                 </View>
@@ -385,7 +396,17 @@ export const CommonFreeTimeModal: React.FC<CommonFreeTimeModalProps> = ({
                         : 'No classes';
 
                     return (
-                      <View key={friend.id} style={styles.friendRow}>
+                      <TouchableOpacity
+                        key={friend.id}
+                        style={styles.friendRow}
+                        onPress={() => {
+                          onClose();
+                          onFriendPress?.(friend);
+                        }}
+                        activeOpacity={onFriendPress ? 0.75 : 1}
+                        accessibilityLabel={`View schedule for ${friend.name}`}
+                        accessibilityRole="button"
+                      >
                         <View style={styles.avatarCircle}>
                           <Text style={styles.avatarInitials}>
                             {friend.initials}
@@ -397,7 +418,7 @@ export const CommonFreeTimeModal: React.FC<CommonFreeTimeModalProps> = ({
                         <Text style={styles.emptyFriendSummary} numberOfLines={1}>
                           {summary}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>

@@ -121,6 +121,7 @@ export interface CommonFreeTimeModalProps {
   date: Date;
   isEmptyState?: boolean;
   onSwitchToWeek?: () => void;
+  onFriendPress?: (friend: SharedCalendarFriend) => void;
 }
 
 export interface SharedFreeWindowBannerProps {
@@ -166,4 +167,5 @@ export interface SharedScheduleScreenProps {
   onNavigateTab?: (tab: TabId) => void;
   initialGroupId?: string;
   initialDate?: Date;
+  onViewFriendSchedule?: (friend: SharedCalendarFriend) => void;
 }
