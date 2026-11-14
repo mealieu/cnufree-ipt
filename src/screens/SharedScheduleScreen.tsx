@@ -42,11 +42,13 @@ import { DailySharedCalendar } from '../components/sharedSchedule/DailySharedCal
 import { WeeklySharedCalendar } from '../components/sharedSchedule/WeeklySharedCalendar';
 import { FriendGroupSelectorModal } from '../components/sharedSchedule/FriendGroupSelectorModal';
 import { CommonFreeTimeModal } from '../components/sharedSchedule/CommonFreeTimeModal';
+import { FriendScheduleScreen } from './FriendScheduleScreen';
 
 export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
   onNavigateTab,
   initialGroupId = 'grp-project-team',
   initialDate = MOCK_TODAY_DATE,
+  onViewFriendSchedule,
 }) => {
   // 1. Date State
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
@@ -75,9 +77,20 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
     friend: SharedCalendarFriend;
   } | null>(null);
 
-  // 6. Selected Friend Preview State (SS-05 architectural context)
-  const [selectedFriendModal, setSelectedFriendModal] =
+  // 6. Selected Friend for Individual Schedule (SS-05)
+  const [selectedFriend, setSelectedFriend] =
     useState<SharedCalendarFriend | null>(null);
+
+  const handleOpenFriendSchedule = useCallback(
+    (friend: SharedCalendarFriend) => {
+      if (onViewFriendSchedule) {
+        onViewFriendSchedule(friend);
+      } else {
+        setSelectedFriend(friend);
+      }
+    },
+    [onViewFriendSchedule]
+  );
 
   // 7. Pull to Refresh State
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -161,6 +174,25 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
       setRefreshing(false);
     }, 600);
   }, []);
+
+  // =========================================================================
+  // SS-05: INDIVIDUAL FRIEND SCHEDULE SCREEN NAVIGATION
+  // =========================================================================
+  if (selectedFriend) {
+    return (
+      <FriendScheduleScreen
+        friend={selectedFriend}
+        friendId={selectedFriend.id}
+        initialDate={currentDate}
+        sourceScreen="shared"
+        onBack={() => setSelectedFriend(null)}
+        onNavigateTab={(tab) => {
+          setSelectedFriend(null);
+          onNavigateTab?.(tab);
+        }}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -249,7 +281,7 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
               friends={activeGroup.members}
               layoutMode={weeklyLayoutMode}
               onLayoutModeChange={(mode) => setWeeklyLayoutMode(mode)}
-              onFriendPress={(friend) => setSelectedFriendModal(friend)}
+              onFriendPress={(friend) => handleOpenFriendSchedule(friend)}
               onScheduleItemPress={(item, friend) =>
                 setSelectedItemModal({ item, friend })
               }
@@ -285,7 +317,7 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
                 highlightFreeWindows={highlightFreeWindows}
                 selectedWindowId={selectedFreeWindow?.id}
                 onFreeWindowPress={(window) => setSelectedFreeWindow(window)}
-                onFriendPress={(friend) => setSelectedFriendModal(friend)}
+                onFriendPress={(friend) => handleOpenFriendSchedule(friend)}
                 onScheduleItemPress={(item, friend) =>
                   setSelectedItemModal({ item, friend })
                 }
@@ -309,19 +341,41 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
           >
             <View style={styles.detailCard}>
               <View style={styles.detailHeader}>
-                <View style={styles.detailAvatarBadge}>
+                <TouchableOpacity
+                  style={styles.detailAvatarBadge}
+                  onPress={() => {
+                    const targetFriend = selectedItemModal.friend;
+                    setSelectedItemModal(null);
+                    handleOpenFriendSchedule(targetFriend);
+                  }}
+                  activeOpacity={0.75}
+                  accessibilityLabel={`View ${selectedItemModal.friend.name}'s schedule`}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.detailAvatarText}>
                     {selectedItemModal.friend.initials}
                   </Text>
-                </View>
-                <View style={{ flex: 1 }}>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    const targetFriend = selectedItemModal.friend;
+                    setSelectedItemModal(null);
+                    handleOpenFriendSchedule(targetFriend);
+                  }}
+                  activeOpacity={0.75}
+                  accessibilityLabel={`View ${selectedItemModal.friend.name}'s schedule`}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.detailFriendName}>
                     {selectedItemModal.friend.name}'s Schedule
                   </Text>
                   <Text style={styles.detailActivityTitle}>
                     {selectedItemModal.item.title}
                   </Text>
-                </View>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={() => setSelectedItemModal(null)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -364,6 +418,23 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
                 )}
               </View>
 
+              {/* Action to view individual friend schedule (SS-05) */}
+              <TouchableOpacity
+                style={styles.viewFriendScheduleButton}
+                onPress={() => {
+                  const targetFriend = selectedItemModal.friend;
+                  setSelectedItemModal(null);
+                  handleOpenFriendSchedule(targetFriend);
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${selectedItemModal.friend.name}'s full schedule`}
+              >
+                <Text style={styles.viewFriendScheduleButtonText}>
+                  View {selectedItemModal.friend.name}’s Schedule
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.closeModalButton}
                 onPress={() => setSelectedItemModal(null)}
@@ -375,66 +446,7 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
         </Modal>
       )}
 
-      {/* ================= 8. FRIEND DETAIL MODAL (SS-05 CONTEXT) ================= */}
-      {selectedFriendModal && (
-        <Modal
-          visible={!!selectedFriendModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setSelectedFriendModal(null)}
-        >
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setSelectedFriendModal(null)}
-          >
-            <View style={styles.detailCard}>
-              <View style={styles.detailHeader}>
-                <View style={styles.detailAvatarBadgeLarge}>
-                  <Text style={styles.detailAvatarTextLarge}>
-                    {selectedFriendModal.initials}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.detailActivityTitle}>
-                    {selectedFriendModal.name}
-                  </Text>
-                  <Text style={styles.detailFriendName}>
-                    {selectedFriendModal.isPrivate
-                      ? 'Privacy Protected'
-                      : 'Schedule Connected'}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setSelectedFriendModal(null)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M18 6L6 18M6 6L18 18"
-                      stroke="#2E4233"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                    />
-                  </Svg>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.friendModalHint}>
-                [SS-05 Hook] Tapping a friend opens their individual schedule view.
-              </Text>
-
-              <TouchableOpacity
-                style={styles.closeModalButton}
-                onPress={() => setSelectedFriendModal(null)}
-              >
-                <Text style={styles.closeModalButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Modal>
-      )}
-
-      {/* ================= 9. BOTTOM NAVIGATION BAR ================= */}
+      {/* ================= 8. BOTTOM NAVIGATION BAR ================= */}
       <BottomNavBar
         activeTab="shared"
         onTabChange={(tab) => {
@@ -443,7 +455,7 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
         notificationBadgeCount={0}
       />
 
-      {/* ================= 10. FRIEND GROUP SELECTOR BOTTOM SHEET (SS-02) ================= */}
+      {/* ================= 9. FRIEND GROUP SELECTOR BOTTOM SHEET (SS-02) ================= */}
       <FriendGroupSelectorModal
         visible={isGroupModalOpen}
         onClose={() => setIsGroupModalOpen(false)}
@@ -452,7 +464,7 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
         onSelectGroup={(g) => setSelectedGroupId(g.id)}
       />
 
-      {/* ================= 11. COMMON FREE TIME BOTTOM SHEET MODAL (SS-04) ================= */}
+      {/* ================= 10. COMMON FREE TIME BOTTOM SHEET MODAL (SS-04) ================= */}
       <CommonFreeTimeModal
         visible={!!selectedFreeWindow || isEmptyFreeTimeModalOpen}
         onClose={() => {
@@ -463,7 +475,12 @@ export const SharedScheduleScreen: React.FC<SharedScheduleScreenProps> = ({
         friends={activeGroup.members}
         date={currentDate}
         isEmptyState={isEmptyFreeTimeModalOpen}
-        onSwitchToWeek={() => setViewMode('week')}
+        onSwitchToWeek={() => {
+          setSelectedFreeWindow(null);
+          setIsEmptyFreeTimeModalOpen(false);
+          setViewMode('week');
+        }}
+        onFriendPress={(friend) => handleOpenFriendSchedule(friend)}
       />
     </SafeAreaView>
   );
@@ -657,15 +674,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#344737',
   },
-  friendModalHint: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: '#55695A',
-    marginBottom: 18,
-    lineHeight: 18,
+  viewFriendScheduleButton: {
+    backgroundColor: '#26392B',
+    paddingVertical: 11,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  viewFriendScheduleButtonText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+    color: '#FFFFFF',
   },
   closeModalButton: {
-    backgroundColor: '#1E5830',
+    backgroundColor: '#3F5644',
     paddingVertical: 10,
     borderRadius: 14,
     alignItems: 'center',

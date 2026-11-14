@@ -1481,3 +1481,131 @@ export function calculateWeeklyAvailabilityRows(
     totalWeekWindows,
   };
 }
+
+/**
+ * SS-05: Look up a friend by their unique identifier across all shared groups
+ */
+export function findSharedFriendById(
+  id: string
+): SharedCalendarFriend | undefined {
+  if (!id) return undefined;
+  for (const group of SHARED_FRIEND_GROUPS) {
+    const friend = group.members.find((m) => m.id === id);
+    if (friend) return friend;
+  }
+  return undefined;
+}
+
+export interface ChronologicalScheduleSlot {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  timeRange?: string;
+  startHour: number;
+  endHour: number;
+  room?: string;
+  isBusy: boolean;
+  isPrivate?: boolean;
+}
+
+/**
+ * SS-05: Returns a full 8 AM - 6 PM chronological breakdown of occupied classes and free intervals
+ */
+export function getChronologicalScheduleForDay(
+  friend: SharedCalendarFriend,
+  dateKey: string,
+  startBound = 8.0,
+  endBound = 18.0
+): ChronologicalScheduleSlot[] {
+  // If the friend has missing schedule or is empty, return empty list
+  if (friend.hasMissingSchedule) {
+    return [];
+  }
+
+  const busyItems = (getFriendScheduleForDateKey(friend, dateKey) || [])
+    .filter((i) => i.isBusy)
+    .sort((a, b) => a.startHour - b.startHour);
+
+  // If no busy items at all, the entire day is free
+  if (busyItems.length === 0) {
+    const sTime = '8:00 AM';
+    const eTime = '6:00 PM';
+    return [
+      {
+        id: `free-${friend.id}-${startBound}-${endBound}`,
+        title: `Free · ${sTime} – ${eTime}`,
+        startTime: sTime,
+        endTime: eTime,
+        timeRange: `${sTime} – ${eTime}`,
+        startHour: startBound,
+        endHour: endBound,
+        isBusy: false,
+      },
+    ];
+  }
+
+  const result: ChronologicalScheduleSlot[] = [];
+  let currentHour = startBound;
+
+  const formatHourLabel = (h: number): string => {
+    const hourPart = Math.floor(h);
+    const minutePart = Math.round((h - hourPart) * 60);
+    const isPM = hourPart >= 12;
+    const displayHour = hourPart % 12 === 0 ? 12 : hourPart % 12;
+    const displayMinute = minutePart < 10 ? `0${minutePart}` : `${minutePart}`;
+    return `${displayHour}:${displayMinute} ${isPM ? 'PM' : 'AM'}`;
+  };
+
+  for (const item of busyItems) {
+    const itemStart = Math.max(startBound, item.startHour);
+    const itemEnd = Math.min(endBound, item.endHour);
+
+    if (itemStart > currentHour + 0.1) {
+      const sTime = formatHourLabel(currentHour);
+      const eTime = formatHourLabel(itemStart);
+      result.push({
+        id: `free-${friend.id}-${currentHour}-${itemStart}`,
+        title: `Free · ${sTime} – ${eTime}`,
+        startTime: sTime,
+        endTime: eTime,
+        timeRange: `${sTime} – ${eTime}`,
+        startHour: currentHour,
+        endHour: itemStart,
+        isBusy: false,
+      });
+    }
+
+    result.push({
+      id: item.id,
+      title: item.title,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      timeRange: item.timeRange || `${item.startTime}–${item.endTime}`,
+      startHour: itemStart,
+      endHour: itemEnd,
+      room: item.room,
+      isBusy: true,
+      isPrivate: item.isPrivate,
+    });
+
+    currentHour = Math.max(currentHour, itemEnd);
+  }
+
+  if (currentHour < endBound - 0.1) {
+    const sTime = formatHourLabel(currentHour);
+    const eTime = formatHourLabel(endBound);
+    result.push({
+      id: `free-${friend.id}-${currentHour}-${endBound}`,
+      title: `Free · ${sTime} – ${eTime}`,
+      startTime: sTime,
+      endTime: eTime,
+      timeRange: `${sTime} – ${eTime}`,
+      startHour: currentHour,
+      endHour: endBound,
+      isBusy: false,
+    });
+  }
+
+  return result;
+}
