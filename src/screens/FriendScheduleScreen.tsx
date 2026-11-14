@@ -3,18 +3,15 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   Platform,
-  StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { FriendAvailability, FriendScheduleItem } from '../types/dashboard';
 import { SharedCalendarFriend } from '../types/sharedSchedule';
 import { COLORS } from '../constants/colors';
-import { FONTS } from '../constants/typography';
 import { UserAvatarSilhouette } from '../components/icons/NavIcons';
 import {
   SAMPLE_FRIEND_MARIA_DEBORAH,
@@ -26,9 +23,12 @@ import {
   formatDateKey,
   findSharedFriendById,
   getChronologicalScheduleForDay,
+  getWeekDaysForDate,
+  formatWeekNavigationRange,
 } from '../mock/sharedScheduleData';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 import { TabId } from '../types/navigation';
+import { styles } from './FriendScheduleScreen.styles';
 
 export interface FriendScheduleScreenProps {
   friend?: FriendAvailability | SharedCalendarFriend | null;
@@ -283,9 +283,18 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
       );
     }
 
+    const isWeekView = sharedViewMode === 'week';
     const sharedDateKey = formatDateKey(sharedDate);
-    const formattedDateTitle = formatHeaderDateTitle(sharedDate);
-    const formattedDateSubtitle = formatHeaderDateSubtitle(sharedDate);
+    const weekDays = getWeekDaysForDate(sharedDate);
+    const weekRange = formatWeekNavigationRange(sharedDate);
+
+    const formattedDateTitle = isWeekView
+      ? weekRange.main
+      : formatHeaderDateTitle(sharedDate);
+
+    const formattedDateSubtitle = isWeekView
+      ? (weekRange.isCurrentWeek ? `This Week · ${weekRange.sub}` : `${weekRange.sub}`)
+      : formatHeaderDateSubtitle(sharedDate);
 
     const chronologicalSlots = getChronologicalScheduleForDay(
       sharedFriend,
@@ -301,24 +310,30 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
         ? 'Partial schedule'
         : 'Full schedule';
 
-    const handleSharedPrevDay = () => {
+    // Previous/next handlers: steps 1 day in Day View, 1 week in Week View
+    const handleSharedPrev = () => {
       setSharedDate((prev) => {
         const d = new Date(prev);
-        d.setDate(d.getDate() - 1);
+        d.setDate(d.getDate() - (isWeekView ? 7 : 1));
         return d;
       });
     };
 
-    const handleSharedNextDay = () => {
+    const handleSharedNext = () => {
       setSharedDate((prev) => {
         const d = new Date(prev);
-        d.setDate(d.getDate() + 1);
+        d.setDate(d.getDate() + (isWeekView ? 7 : 1));
         return d;
       });
     };
 
     const handleSharedToday = () => {
       setSharedDate(MOCK_TODAY_DATE);
+    };
+
+    const handleSelectDayFromWeek = (targetDate: Date) => {
+      setSharedDate(targetDate);
+      setSharedViewMode('day');
     };
 
     return (
@@ -419,6 +434,9 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
               </View>
             </View>
 
+            {/* Hairline Divider */}
+            <View style={styles.sharedDividerLine} />
+
             {/* Date Navigation Row: Mon, Oct 19 / Today · 2026, [Today] [<] [>] */}
             <View style={styles.sharedDateNavRow}>
               <View>
@@ -433,15 +451,18 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
                   style={styles.sharedTodayButton}
                   onPress={handleSharedToday}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Jump to today"
                 >
                   <Text style={styles.sharedTodayButtonText}>Today</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.sharedNavArrowButton}
-                  onPress={handleSharedPrevDay}
+                  onPress={handleSharedPrev}
                   activeOpacity={0.7}
-                  accessibilityLabel="Previous day"
+                  accessibilityRole="button"
+                  accessibilityLabel={isWeekView ? 'Previous week' : 'Previous day'}
                 >
                   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                     <Path
@@ -456,9 +477,10 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
 
                 <TouchableOpacity
                   style={styles.sharedNavArrowButton}
-                  onPress={handleSharedNextDay}
+                  onPress={handleSharedNext}
                   activeOpacity={0.7}
-                  accessibilityLabel="Next day"
+                  accessibilityRole="button"
+                  accessibilityLabel={isWeekView ? 'Next week' : 'Next day'}
                 >
                   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                     <Path
@@ -473,20 +495,23 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
               </View>
             </View>
 
-            {/* Day / Week View Toggle */}
+            {/* Day / Week View Segmented Toggle (Matches Figma screenshot) */}
             <View style={styles.sharedToggleContainer}>
               <TouchableOpacity
                 style={[
                   styles.sharedToggleOption,
-                  sharedViewMode === 'day' && styles.sharedToggleOptionActive,
+                  !isWeekView && styles.sharedToggleOptionActive,
                 ]}
                 onPress={() => setSharedViewMode('day')}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Day View"
+                accessibilityState={{ selected: !isWeekView }}
               >
                 <Text
                   style={[
                     styles.sharedToggleText,
-                    sharedViewMode === 'day'
+                    !isWeekView
                       ? styles.sharedToggleTextActive
                       : styles.sharedToggleTextInactive,
                   ]}
@@ -498,15 +523,18 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
               <TouchableOpacity
                 style={[
                   styles.sharedToggleOption,
-                  sharedViewMode === 'week' && styles.sharedToggleOptionActive,
+                  isWeekView && styles.sharedToggleOptionActive,
                 ]}
                 onPress={() => setSharedViewMode('week')}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Week View"
+                accessibilityState={{ selected: isWeekView }}
               >
                 <Text
                   style={[
                     styles.sharedToggleText,
-                    sharedViewMode === 'week'
+                    isWeekView
                       ? styles.sharedToggleTextActive
                       : styles.sharedToggleTextInactive,
                   ]}
@@ -516,7 +544,7 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Content: Missing Schedule or Timeline */}
+            {/* Missing Schedule Empty State */}
             {hasMissingSchedule ? (
               <View style={styles.sharedUnavailableContainer}>
                 <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
@@ -542,7 +570,256 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
                   schedule yet.
                 </Text>
               </View>
+            ) : isWeekView ? (
+              /* ========================================================= */
+              /* WEEK VIEW: COMPLETE MONDAY–SUNDAY WEEKLY SCHEDULE */
+              /* ========================================================= */
+              <>
+                {/* 1. Quick Day Strip across Monday–Sunday */}
+                <View style={styles.weekQuickStripWrapper}>
+                  <View style={styles.weekQuickStrip}>
+                    {weekDays.map((day) => {
+                      const isSelected = day.dateKey === sharedDateKey;
+                      return (
+                        <TouchableOpacity
+                          key={day.dateKey}
+                          style={[
+                            styles.weekQuickTab,
+                            isSelected && styles.weekQuickTabActive,
+                            day.isToday && !isSelected && styles.weekQuickTabToday,
+                          ]}
+                          onPress={() => handleSelectDayFromWeek(day.date)}
+                          activeOpacity={0.75}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${day.fullLabel}, tap to view day`}
+                        >
+                          <Text
+                            style={[
+                              styles.weekQuickDayShort,
+                              isSelected && styles.weekQuickDayShortActive,
+                            ]}
+                          >
+                            {day.dayShort}
+                          </Text>
+                          <Text style={styles.weekQuickDayNumber}>
+                            {day.dayNumber}
+                          </Text>
+                          {day.isToday && (
+                            <View style={styles.weekQuickTodayDot} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {/* 2. Horizontally-scrollable 7-Day Timetable Grid */}
+                <View style={styles.weekCalendarBox}>
+                  {/* Left Column: Fixed Time Axis */}
+                  <View style={styles.weekTimeAxisCol}>
+                    <View style={styles.weekTimeAxisSpacer}>
+                      <Text style={styles.weekTimeAxisSpacerText}>TIME</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.weekTimeAxisItemsContainer,
+                        { height: TOTAL_HOURS * HOUR_HEIGHT },
+                      ]}
+                    >
+                      {TIMELINE_HOURS.map((item, index) => (
+                        <View
+                          key={item.hour}
+                          style={[
+                            styles.timeAxisItem,
+                            { top: index * HOUR_HEIGHT - 7, left: 4 },
+                          ]}
+                        >
+                          <Text style={styles.timeAxisLabel}>{item.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Horizontal Scroll Area: 7 Columns for Mon - Sun */}
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.weekHorizontalScrollView}
+                  >
+                    <View style={styles.weekDaysContainer}>
+                      {weekDays.map((day) => {
+                        const isSelected = day.dateKey === sharedDateKey;
+                        const daySlots = getChronologicalScheduleForDay(
+                          sharedFriend,
+                          day.dateKey
+                        );
+
+                        return (
+                          <View key={day.dateKey} style={styles.weekDayColumn}>
+                            {/* Column Header (tap to open day view) */}
+                            <TouchableOpacity
+                              style={[
+                                styles.weekDayColHeader,
+                                isSelected && styles.weekDayColHeaderActive,
+                              ]}
+                              onPress={() => handleSelectDayFromWeek(day.date)}
+                              activeOpacity={0.75}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Open Day View for ${day.fullLabel}`}
+                            >
+                              <Text
+                                style={[
+                                  styles.weekDayColShortText,
+                                  isSelected && styles.weekDayColShortTextActive,
+                                ]}
+                              >
+                                {day.dayShort}
+                              </Text>
+                              <Text
+                                style={[
+                                  styles.weekDayColNumText,
+                                  isSelected && styles.weekDayColNumTextActive,
+                                ]}
+                              >
+                                {day.dayNumber}
+                              </Text>
+                              {day.isToday && (
+                                <View style={styles.weekQuickTodayDot} />
+                              )}
+                            </TouchableOpacity>
+
+                            {/* Column Schedule Blocks */}
+                            <TouchableOpacity
+                              activeOpacity={1}
+                              onPress={() => handleSelectDayFromWeek(day.date)}
+                              style={[
+                                styles.weekDayGridContent,
+                                { height: TOTAL_HOURS * HOUR_HEIGHT },
+                              ]}
+                            >
+                              {/* Hour grid lines */}
+                              {TIMELINE_HOURS.map((item, index) => (
+                                <View
+                                  key={`grid-${day.dateKey}-${item.hour}`}
+                                  style={[
+                                    styles.gridLine,
+                                    { top: index * HOUR_HEIGHT },
+                                  ]}
+                                />
+                              ))}
+
+                              {/* Chronological blocks for this day */}
+                              {daySlots.map((item) => {
+                                const clampedStart = Math.max(
+                                  START_HOUR,
+                                  item.startHour
+                                );
+                                const clampedEnd = Math.min(
+                                  END_HOUR,
+                                  item.endHour
+                                );
+                                const duration = Math.max(
+                                  0.5,
+                                  clampedEnd - clampedStart
+                                );
+                                const blockTop =
+                                  (clampedStart - START_HOUR) * HOUR_HEIGHT + 2;
+                                const blockHeight =
+                                  duration * HOUR_HEIGHT - 4;
+
+                                if (item.isBusy) {
+                                  return (
+                                    <TouchableOpacity
+                                      key={item.id}
+                                      style={[
+                                        styles.weekBusyBlock,
+                                        {
+                                          top: blockTop,
+                                          height: blockHeight,
+                                        },
+                                      ]}
+                                      onPress={() =>
+                                        handleSelectDayFromWeek(day.date)
+                                      }
+                                      activeOpacity={0.8}
+                                    >
+                                      <Text
+                                        style={styles.weekBusyTitle}
+                                        numberOfLines={1}
+                                      >
+                                        {item.title}
+                                      </Text>
+                                      <Text
+                                        style={styles.weekBusyTime}
+                                        numberOfLines={1}
+                                      >
+                                        {item.timeRange ||
+                                          `${item.startTime}–${item.endTime}`}
+                                      </Text>
+                                      {item.room && (
+                                        <Text
+                                          style={styles.weekBusyRoom}
+                                          numberOfLines={1}
+                                        >
+                                          {item.room}
+                                        </Text>
+                                      )}
+                                    </TouchableOpacity>
+                                  );
+                                }
+
+                                return (
+                                  <TouchableOpacity
+                                    key={item.id}
+                                    style={[
+                                      styles.weekFreeBlock,
+                                      {
+                                        top: blockTop,
+                                        height: blockHeight,
+                                      },
+                                    ]}
+                                    onPress={() =>
+                                      handleSelectDayFromWeek(day.date)
+                                    }
+                                    activeOpacity={0.8}
+                                  >
+                                    <View style={styles.weekFreeContentRow}>
+                                      <Svg
+                                        width={10}
+                                        height={10}
+                                        viewBox="0 0 16 16"
+                                        fill="none"
+                                      >
+                                        <Path
+                                          d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                                          stroke="#2C3A2E"
+                                          strokeWidth={2.4}
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </Svg>
+                                      <Text
+                                        style={styles.weekFreeText}
+                                        numberOfLines={1}
+                                      >
+                                        Free
+                                      </Text>
+                                    </View>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </View>
+              </>
             ) : (
+              /* ========================================================= */
+              /* DAY VIEW: DAILY CHRONOLOGICAL TIMELINE (FIGMA UI-30) */
+              /* ========================================================= */
               <View style={styles.timelineBox}>
                 {/* Left Column: Vertical Time Axis */}
                 <View style={styles.timeAxisColumn}>
@@ -1041,644 +1318,3 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.cream,
-    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) : 0,
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: COLORS.cream,
-  },
-  scrollContent: {
-    paddingBottom: 95, // Leaves space so bottom nav never overlaps schedule box
-  },
-  contentContainer: {
-    width: '100%',
-    maxWidth: 480,
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-
-  /* 1. Header Styles */
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  headerTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 23,
-    color: '#172019',
-    letterSpacing: -0.2,
-  },
-
-  /* 2. Profile Section Styles */
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 18,
-    gap: 16,
-  },
-  avatarContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#DEE5ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  profileInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  friendName: {
-    fontFamily: FONTS.bold,
-    fontSize: 21,
-    color: '#172019',
-    letterSpacing: -0.2,
-  },
-  friendSubtitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 14,
-    color: '#4B594E',
-    marginTop: 3,
-  },
-
-  /* 3. Date Display & Toggle Controls */
-  dateDisplay: {
-    fontFamily: FONTS.medium,
-    fontSize: 14.5,
-    color: '#344338',
-    marginBottom: 10,
-    paddingHorizontal: 2,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#CCD7CA',
-    borderRadius: 24,
-    padding: 4,
-    marginBottom: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-      web: {
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-      },
-    }),
-  },
-  toggleOption: {
-    flex: 1,
-    paddingVertical: 9,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleOptionActive: {
-    backgroundColor: '#1C231F',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.16,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 5px rgba(0,0,0,0.18)',
-      },
-    }),
-  },
-  toggleText: {
-    fontSize: 14,
-    letterSpacing: 0.1,
-  },
-  toggleTextActive: {
-    fontFamily: FONTS.bold,
-    color: '#FFFFFF',
-  },
-  toggleTextInactive: {
-    fontFamily: FONTS.medium,
-    color: '#2F3D32',
-  },
-
-  /* 4. Weekly Navigation Banner */
-  weeklyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.weeklyBannerBg,
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.18,
-        shadowRadius: 3.5,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-      },
-    }),
-  },
-  bannerArrowBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weeklyIndicatorPill: {
-    backgroundColor: COLORS.weeklyBannerPillBg,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weeklyIndicatorText: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: COLORS.weeklyBannerText,
-    letterSpacing: 0.1,
-  },
-
-  /* 5. Day Selector Tabs */
-  dayTabsWrapper: {
-    marginBottom: 16,
-  },
-  dayTabsScroll: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 3,
-    gap: 7,
-  },
-  dayTab: {
-    width: 48,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: COLORS.dayTabBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1.5 },
-        shadowOpacity: 0.12,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 1.5px 3.5px rgba(0,0,0,0.1)',
-      },
-    }),
-  },
-  dayTabActive: {
-    backgroundColor: COLORS.dayTabActiveBg,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.22,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
-      },
-    }),
-  },
-  dayAbbrevText: {
-    fontFamily: FONTS.medium,
-    fontSize: 11,
-    color: COLORS.dayTabTextSubtle,
-    marginBottom: 2,
-  },
-  dayAbbrevTextActive: {
-    color: '#DCE8DE',
-  },
-  dayNumberText: {
-    fontFamily: FONTS.bold,
-    fontSize: 15,
-    color: COLORS.dayTabTextDark,
-  },
-  dayNumberTextActive: {
-    color: '#FFFFFF',
-  },
-
-  /* 6. Chronological Time Blocks (Timeline Container) */
-  timelineBox: {
-    flexDirection: 'row',
-    borderWidth: 1.4,
-    borderColor: COLORS.timelineContainerBorder,
-    borderRadius: 14,
-    backgroundColor: COLORS.timelineContainerBg,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#172B1E',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 1,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(23,43,30,0.04)',
-      },
-    }),
-  },
-  timeAxisColumn: {
-    width: 44,
-    position: 'relative',
-    marginRight: 6,
-  },
-  timeAxisItem: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'flex-start',
-  },
-  timeAxisLabel: {
-    fontFamily: FONTS.medium,
-    fontSize: 10.5,
-    color: '#556858',
-    letterSpacing: 0.1,
-  },
-  scheduleGridArea: {
-    flex: 1,
-    position: 'relative',
-  },
-  gridLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#DEE5DD',
-    borderStyle: 'dashed',
-  },
-
-  /* Free Time Block (Figma Reference) */
-  freeBlock: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    borderRadius: 14,
-    borderWidth: 1.4,
-    borderColor: COLORS.timelineFreeBorder,
-    borderStyle: 'dashed',
-    backgroundColor: COLORS.timelineFreeBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  freeContentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  freeCheckIcon: {
-    marginRight: 2,
-  },
-  freeText: {
-    fontFamily: FONTS.bold,
-    fontSize: 12.5,
-    color: '#2A382C',
-    letterSpacing: -0.1,
-  },
-
-  /* Busy/Class Time Block (Figma Reference) */
-  busyBlock: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    borderRadius: 8,
-    backgroundColor: COLORS.timelineBusyBg,
-    borderLeftWidth: 4.5,
-    borderLeftColor: COLORS.timelineBusyAccent,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-      web: {
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-      },
-    }),
-  },
-  busyTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  busyTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 13.5,
-    color: '#1B242C',
-    flex: 1,
-    marginRight: 8,
-  },
-  busyTimeRange: {
-    fontFamily: FONTS.medium,
-    fontSize: 11.5,
-    color: '#5B6874',
-  },
-  busyRoom: {
-    fontFamily: FONTS.medium,
-    fontSize: 12,
-    color: '#5B6874',
-  },
-
-  /* UI-30 Shared Tracker Mode Styles (SS-05) */
-  sharedHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 2,
-  },
-  sharedBackButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#EBEBE0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  sharedBackTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 18,
-    color: '#1B271E',
-    letterSpacing: -0.2,
-  },
-  sharedProfileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
-  },
-  sharedAvatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#617065',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sharedAvatarText: {
-    fontFamily: FONTS.bold,
-    fontSize: 18,
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  sharedProfileInfo: {
-    flex: 1,
-  },
-  sharedFriendName: {
-    fontFamily: FONTS.bold,
-    fontSize: 20,
-    color: '#172019',
-    letterSpacing: -0.3,
-  },
-  sharedFriendSubtitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#5C6B5F',
-    marginTop: 2,
-  },
-  sharedStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EAE6CF',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  sharedStatusBadgeText: {
-    fontFamily: FONTS.medium,
-    fontSize: 12,
-    color: '#1B271E',
-  },
-  sharedDateNavRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-    paddingHorizontal: 2,
-  },
-  sharedDateTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 22,
-    color: '#172019',
-    letterSpacing: -0.4,
-  },
-  sharedDateSubtitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#5C6B5F',
-    marginTop: 2,
-  },
-  sharedDateNavControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sharedTodayButton: {
-    backgroundColor: '#E6E9DE',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 18,
-  },
-  sharedTodayButtonText: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#172019',
-  },
-  sharedNavArrowButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#E6E9DE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sharedToggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#EAEBE5',
-    borderRadius: 22,
-    padding: 3,
-    marginBottom: 16,
-  },
-  sharedToggleOption: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sharedToggleOptionActive: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D8DCD3',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-      web: {
-        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-      },
-    }),
-  },
-  sharedToggleText: {
-    fontFamily: FONTS.medium,
-    fontSize: 14,
-  },
-  sharedToggleTextActive: {
-    color: '#172019',
-  },
-  sharedToggleTextInactive: {
-    color: '#637266',
-  },
-  sharedFreeBlock: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    borderWidth: 1.2,
-    borderStyle: 'dashed',
-    borderColor: '#B9C7B7',
-    borderRadius: 10,
-    backgroundColor: 'rgba(238, 242, 235, 0.65)',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  sharedFreeContentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sharedFreeCheckIcon: {
-    marginRight: 6,
-  },
-  sharedFreeText: {
-    fontFamily: FONTS.medium,
-    fontSize: 12.5,
-    color: '#28362B',
-  },
-  sharedBusyBlock: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    backgroundColor: '#D1D7CE',
-    borderLeftWidth: 4,
-    borderLeftColor: '#36473A',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    justifyContent: 'center',
-  },
-  sharedBusyTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sharedBusyTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 13.5,
-    color: '#172019',
-  },
-  sharedBusyTimeRange: {
-    fontFamily: FONTS.medium,
-    fontSize: 12,
-    color: '#4A584D',
-  },
-  sharedBusyRoom: {
-    fontFamily: FONTS.regular,
-    fontSize: 11.5,
-    color: '#5C6B5F',
-    marginTop: 2,
-  },
-  sharedUnavailableContainer: {
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(230, 235, 227, 0.5)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#D4DDD1',
-    marginVertical: 24,
-  },
-  sharedUnavailableTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 17,
-    color: '#172019',
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  sharedUnavailableText: {
-    fontFamily: FONTS.regular,
-    fontSize: 13.5,
-    color: '#5C6B5F',
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 16,
-  },
-  sharedReturnButton: {
-    backgroundColor: '#27382B',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  sharedReturnButtonText: {
-    fontFamily: FONTS.medium,
-    fontSize: 13.5,
-    color: '#FFFFFF',
-  },
-});
