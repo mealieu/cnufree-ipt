@@ -5,6 +5,9 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
@@ -110,14 +113,64 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
       .toUpperCase() ||
     'AC';
 
-  const isPrivateSchedule = (friend as any)?.isPrivate === true;
-  const hasMissingSchedule = (friend as any)?.hasMissingSchedule === true;
+  const isPrivateSchedule =
+    (friend as any)?.isPrivate === true ||
+    (friend as any)?.scheduleState === 'privacy-restricted';
+  const hasMissingSchedule =
+    (friend as any)?.hasMissingSchedule === true ||
+    (friend as any)?.scheduleState === 'missing';
+  const isUnavailableData =
+    (friend as any)?.isUnavailable === true ||
+    (friend as any)?.scheduleState === 'unavailable';
 
-  const statusBadgeText = hasMissingSchedule
-    ? 'No schedule'
-    : isPrivateSchedule
-      ? 'Partial schedule'
-      : 'Full schedule';
+  // SS-06 Interactive states
+  const [isRetrying, setIsRetrying] = useState<boolean>(false);
+  const [lastCheckedTime, setLastCheckedTime] = useState<string>(
+    (friend as any)?.lastChecked || (friend as any)?.errorMessage || 'sample error'
+  );
+  const [hasRequestedSchedule, setHasRequestedSchedule] = useState<boolean>(false);
+  const [privateNoticeSlot, setPrivateNoticeSlot] =
+    useState<ChronologicalScheduleSlot | null>(null);
+
+  const handleRetryLoad = useCallback(() => {
+    setIsRetrying(true);
+    setTimeout(() => {
+      setIsRetrying(false);
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      setLastCheckedTime(`Checked at ${timeStr}: schedule service unreachable`);
+    }, 700);
+  }, []);
+
+  const handleRequestSchedule = useCallback(() => {
+    setHasRequestedSchedule(true);
+  }, []);
+
+  // Status Badge resolution
+  const statusBadgeInfo = useMemo(() => {
+    if (isUnavailableData) {
+      return {
+        text: 'Unavailable',
+        type: 'unavailable',
+      };
+    }
+    if (hasMissingSchedule) {
+      return {
+        text: 'Not shared',
+        type: 'missing',
+      };
+    }
+    if (isPrivateSchedule) {
+      return {
+        text: 'Availability only',
+        type: 'privacy',
+      };
+    }
+    return {
+      text: 'Full schedule',
+      type: 'full',
+    };
+  }, [isUnavailableData, hasMissingSchedule, isPrivateSchedule]);
 
   // Date and Week Range formatting
   const dateKey = formatDateKey(selectedDate);
@@ -295,8 +348,57 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
               </Text>
             </View>
 
-            <View style={styles.sharedStatusBadge}>
-              {!hasMissingSchedule && !isPrivateSchedule && (
+            {/* Status Badge (UI-31) */}
+            {statusBadgeInfo.type !== 'full' ? (
+              <View style={styles.sharedStatusBadgeAmber}>
+                {statusBadgeInfo.type === 'privacy' && (
+                  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+                    <Rect
+                      x="3"
+                      y="11"
+                      width="18"
+                      height="11"
+                      rx="2"
+                      stroke="#5C4A15"
+                      strokeWidth={2.4}
+                    />
+                    <Path
+                      d="M7 11V7a5 5 0 0 1 10 0v4"
+                      stroke="#5C4A15"
+                      strokeWidth={2.4}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                )}
+                {statusBadgeInfo.type === 'missing' && (
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
+                    <Circle cx="12" cy="12" r="10" stroke="#5C4A15" strokeWidth={2} />
+                    <Path
+                      d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"
+                      stroke="#5C4A15"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                )}
+                {statusBadgeInfo.type === 'unavailable' && (
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
+                    <Circle cx="12" cy="12" r="10" stroke="#5C4A15" strokeWidth={2} />
+                    <Path
+                      d="M12 16v-4M12 8h.01"
+                      stroke="#5C4A15"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                )}
+                <Text style={styles.sharedStatusBadgeAmberText}>
+                  {statusBadgeInfo.text}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.sharedStatusBadge}>
                 <Svg
                   width={13}
                   height={13}
@@ -312,178 +414,403 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
                     strokeLinejoin="round"
                   />
                 </Svg>
+                <Text style={styles.sharedStatusBadgeText}>
+                  {statusBadgeInfo.text}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* ========================================================= */}
+          {/* STATE ROUTING (UI-31) */}
+          {/* ========================================================= */}
+          {isUnavailableData ? (
+            /* ========================================================= */
+            /* UI-31 UNAVAILABLE DATA STATE (MARCUS KIM) */
+            /* ========================================================= */
+            <View style={styles.centerStateContainer}>
+              {/* Big Circular Info Icon */}
+              <View style={styles.bigStateIconCircle}>
+                <Svg width={40} height={40} viewBox="0 0 24 24" fill="none">
+                  <Circle cx="12" cy="12" r="10" stroke="#48594C" strokeWidth={1.8} />
+                  <Path
+                    d="M12 16v-4M12 8h.01"
+                    stroke="#48594C"
+                    strokeWidth={2.2}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </View>
+
+              {/* Title */}
+              <Text style={styles.stateTitle}>
+                Couldn't load {friendName}'s schedule
+              </Text>
+
+              {/* Subtitle */}
+              <Text style={styles.stateSubtitle}>
+                This isn't the same as being free. They aren't counted as available until it loads.
+              </Text>
+
+              {/* Unknown Availability Box */}
+              <View style={styles.unknownAvailabilityCard}>
+                <View style={styles.unknownAvailabilityHeaderRow}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Circle cx="12" cy="12" r="10" stroke="#48594C" strokeWidth={2} />
+                    <Path
+                      d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"
+                      stroke="#48594C"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={styles.unknownAvailabilityTitle}>
+                    Unknown availability
+                  </Text>
+                </View>
+                <Text style={styles.unknownAvailabilitySub}>
+                  Last checked: {lastCheckedTime}
+                </Text>
+              </View>
+
+              {/* Feedback Banner if retried */}
+              {lastCheckedTime.includes('Checked at') && (
+                <View style={styles.feedbackBanner}>
+                  <Text style={styles.feedbackBannerText}>
+                    Checked schedule server. Still temporarily unreachable.
+                  </Text>
+                </View>
               )}
-              {isPrivateSchedule && (
-                <Svg
-                  width={12}
-                  height={12}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  style={{ marginRight: 5 }}
+
+              {/* Action Buttons */}
+              <View style={styles.stateActionsContainer}>
+                <TouchableOpacity
+                  style={styles.statePrimaryButton}
+                  onPress={handleRetryLoad}
+                  activeOpacity={0.8}
+                  disabled={isRetrying}
+                  accessibilityRole="button"
+                  accessibilityLabel="Try again to load schedule"
                 >
+                  {isRetrying ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <Path
+                        d="M3 3v5h5"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <Path
+                        d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <Path
+                        d="M21 21v-5h-5"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  )}
+                  <Text style={styles.statePrimaryButtonText}>
+                    {isRetrying ? 'Checking...' : 'Try again'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.stateSecondaryButton}
+                  onPress={onBack}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to Shared Tracker"
+                >
+                  <Text style={styles.stateSecondaryButtonText}>
+                    Back to Shared Tracker
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : hasMissingSchedule ? (
+            /* ========================================================= */
+            /* UI-31 MISSING SCHEDULE STATE (PRIYA NAIR) */
+            /* ========================================================= */
+            <View style={styles.centerStateContainer}>
+              {/* Big Circular Calendar Icon */}
+              <View style={styles.bigStateIconCircle}>
+                <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
                   <Rect
                     x="3"
-                    y="11"
+                    y="4"
                     width="18"
-                    height="11"
-                    rx="2"
-                    stroke="#1B271E"
-                    strokeWidth={2.2}
+                    height="18"
+                    rx="3"
+                    stroke="#48594C"
+                    strokeWidth={2}
                   />
                   <Path
-                    d="M7 11V7a5 5 0 0 1 10 0v4"
-                    stroke="#1B271E"
-                    strokeWidth={2.2}
+                    d="M16 2v4M8 2v4M3 10h18"
+                    stroke="#48594C"
+                    strokeWidth={2}
                     strokeLinecap="round"
                   />
                 </Svg>
+              </View>
+
+              {/* Title */}
+              <Text style={styles.stateTitle}>
+                {friendName} hasn't shared a schedule
+              </Text>
+
+              {/* Subtitle */}
+              <Text style={styles.stateSubtitle}>
+                We can't tell when {friendName} is free, so they aren't counted as available in the group.
+              </Text>
+
+              {/* Unknown Availability Box */}
+              <View style={styles.unknownAvailabilityCard}>
+                <View style={styles.unknownAvailabilityHeaderRow}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Circle cx="12" cy="12" r="10" stroke="#48594C" strokeWidth={2} />
+                    <Path
+                      d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"
+                      stroke="#48594C"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={styles.unknownAvailabilityTitle}>
+                    Unknown availability
+                  </Text>
+                </View>
+                <Text style={styles.unknownAvailabilitySub}>
+                  Shown hatched, not free
+                </Text>
+              </View>
+
+              {/* Feedback Banner if requested */}
+              {hasRequestedSchedule && (
+                <View style={styles.feedbackBanner}>
+                  <Text style={styles.feedbackBannerText}>
+                    ✓ Request sent to {friendName}! We'll notify you once they connect their schedule.
+                  </Text>
+                </View>
               )}
-              <Text style={styles.sharedStatusBadgeText}>
-                {statusBadgeText}
-              </Text>
+
+              {/* Action Buttons */}
+              <View style={styles.stateActionsContainer}>
+                <TouchableOpacity
+                  style={styles.statePrimaryButton}
+                  onPress={handleRequestSchedule}
+                  activeOpacity={0.8}
+                  disabled={hasRequestedSchedule}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ask ${friendName} to share schedule`}
+                >
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M22 2L11 13"
+                      stroke="#FFFFFF"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d="M22 2L15 22L11 13L2 9L22 2Z"
+                      stroke="#FFFFFF"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={styles.statePrimaryButtonText}>
+                    {hasRequestedSchedule ? 'Schedule requested' : 'Ask to share schedule'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.stateSecondaryButton}
+                  onPress={onBack}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to Shared Tracker"
+                >
+                  <Text style={styles.stateSecondaryButtonText}>
+                    Back to Shared Tracker
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-
-          {/* Hairline Divider */}
-          <View style={styles.sharedDividerLine} />
-
-          {/* Date Navigation Row: Mon, Oct 19 / Today · 2026, [Today] [<] [>] */}
-          <View style={styles.sharedDateNavRow}>
-            <View>
-              <Text style={styles.sharedDateTitle}>{formattedDateTitle}</Text>
-              <Text style={styles.sharedDateSubtitle}>
-                {formattedDateSubtitle}
-              </Text>
-            </View>
-
-            <View style={styles.sharedDateNavControls}>
-              <TouchableOpacity
-                style={styles.sharedTodayButton}
-                onPress={handleToday}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Jump to today"
-              >
-                <Text style={styles.sharedTodayButtonText}>Today</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.sharedNavArrowButton}
-                onPress={handlePrev}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={isWeekView ? 'Previous week' : 'Previous day'}
-              >
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M15 18L9 12L15 6"
-                    stroke="#172019"
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.sharedNavArrowButton}
-                onPress={handleNext}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={isWeekView ? 'Next week' : 'Next day'}
-              >
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M9 6L15 12L9 18"
-                    stroke="#172019"
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Day / Week View Segmented Toggle (Matches Figma UI-30 screenshot) */}
-          <View style={styles.sharedToggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.sharedToggleOption,
-                !isWeekView && styles.sharedToggleOptionActive,
-              ]}
-              onPress={() => setViewMode('day')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Day View"
-              accessibilityState={{ selected: !isWeekView }}
-            >
-              <Text
-                style={[
-                  styles.sharedToggleText,
-                  !isWeekView
-                    ? styles.sharedToggleTextActive
-                    : styles.sharedToggleTextInactive,
-                ]}
-              >
-                Day
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.sharedToggleOption,
-                isWeekView && styles.sharedToggleOptionActive,
-              ]}
-              onPress={() => setViewMode('week')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Week View"
-              accessibilityState={{ selected: isWeekView }}
-            >
-              <Text
-                style={[
-                  styles.sharedToggleText,
-                  isWeekView
-                    ? styles.sharedToggleTextActive
-                    : styles.sharedToggleTextInactive,
-                ]}
-              >
-                Week
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Missing Schedule Empty State */}
-          {hasMissingSchedule ? (
-            <View style={styles.sharedUnavailableContainer}>
-              <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
-                <Circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="#5C6B5F"
-                  strokeWidth={1.8}
-                />
-                <Path
-                  d="M12 8v5M12 16h.01"
-                  stroke="#5C6B5F"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                />
-              </Svg>
-              <Text style={styles.sharedUnavailableTitle}>
-                No Schedule Available
-              </Text>
-              <Text style={styles.sharedUnavailableText}>
-                {friendName} has not uploaded or connected their schedule yet.
-              </Text>
-            </View>
-          ) : isWeekView ? (
+          ) : (
             /* ========================================================= */
-            /* WEEK VIEW: COMPLETE MONDAY–SUNDAY WEEKLY SCHEDULE */
+            /* PRIVACY-RESTRICTED (CHLOE PARK) OR FULL SCHEDULE */
             /* ========================================================= */
             <>
+              {/* Hairline Divider */}
+              <View style={styles.sharedDividerLine} />
+
+              {/* Date Navigation Row: Mon, Oct 19 / Today · 2026, [Today] [<] [>] */}
+              <View style={styles.sharedDateNavRow}>
+                <View>
+                  <Text style={styles.sharedDateTitle}>{formattedDateTitle}</Text>
+                  <Text style={styles.sharedDateSubtitle}>
+                    {formattedDateSubtitle}
+                  </Text>
+                </View>
+
+                <View style={styles.sharedDateNavControls}>
+                  <TouchableOpacity
+                    style={styles.sharedTodayButton}
+                    onPress={handleToday}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Jump to today"
+                  >
+                    <Text style={styles.sharedTodayButtonText}>Today</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.sharedNavArrowButton}
+                    onPress={handlePrev}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={isWeekView ? 'Previous week' : 'Previous day'}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M15 18L9 12L15 6"
+                        stroke="#172019"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.sharedNavArrowButton}
+                    onPress={handleNext}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={isWeekView ? 'Next week' : 'Next day'}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M9 6L15 12L9 18"
+                        stroke="#172019"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Day / Week View Segmented Toggle (Matches Figma UI-30/31 screenshot) */}
+              <View style={styles.sharedToggleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.sharedToggleOption,
+                    !isWeekView && styles.sharedToggleOptionActive,
+                  ]}
+                  onPress={() => setViewMode('day')}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Day View"
+                  accessibilityState={{ selected: !isWeekView }}
+                >
+                  <Text
+                    style={[
+                      styles.sharedToggleText,
+                      !isWeekView
+                        ? styles.sharedToggleTextActive
+                        : styles.sharedToggleTextInactive,
+                    ]}
+                  >
+                    Day
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.sharedToggleOption,
+                    isWeekView && styles.sharedToggleOptionActive,
+                  ]}
+                  onPress={() => setViewMode('week')}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Week View"
+                  accessibilityState={{ selected: isWeekView }}
+                >
+                  <Text
+                    style={[
+                      styles.sharedToggleText,
+                      isWeekView
+                        ? styles.sharedToggleTextActive
+                        : styles.sharedToggleTextInactive,
+                    ]}
+                  >
+                    Week
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Privacy-Restricted Banner (UI-31 Chloe Park) */}
+              {isPrivateSchedule && (
+                <View style={styles.privacyBanner}>
+                  <View style={styles.privacyIconBox}>
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Rect
+                        x="3"
+                        y="11"
+                        width="18"
+                        height="11"
+                        rx="2"
+                        stroke="#1A251D"
+                        strokeWidth={2.2}
+                      />
+                      <Path
+                        d="M7 11V7a5 5 0 0 1 10 0v4"
+                        stroke="#1A251D"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                  </View>
+                  <View style={styles.privacyTextCol}>
+                    <Text style={styles.privacyTitle}>
+                      {(friend as any)?.privacyNotice || `${friendName} limits what she shares`}
+                    </Text>
+                    <Text style={styles.privacySubtitle}>
+                      {(friend as any)?.privacyNoticeSub ||
+                        'You can see busy and free times. Titles and rooms are hidden.'}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* View Rendering: Week View vs Day View */}
+              {isWeekView ? (
+                /* ========================================================= */
+                /* WEEK VIEW: COMPLETE MONDAY–SUNDAY WEEKLY SCHEDULE */
+                /* ========================================================= */
+                <>
               {/* 1. Quick Day Strip across Monday–Sunday */}
               <View style={styles.weekQuickStripWrapper}>
                 <View style={styles.weekQuickStrip}>
@@ -634,6 +961,70 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
                                 duration * HOUR_HEIGHT - 4;
 
                               if (item.isBusy) {
+                                if (isPrivateSchedule || item.isPrivate) {
+                                  return (
+                                    <TouchableOpacity
+                                      key={item.id}
+                                      style={[
+                                        styles.weekBusyBlock,
+                                        {
+                                          top: blockTop,
+                                          height: blockHeight,
+                                          backgroundColor: '#D9DDE2',
+                                          borderLeftColor: '#4B5563',
+                                        },
+                                      ]}
+                                      onPress={() => setPrivateNoticeSlot(item)}
+                                      activeOpacity={0.8}
+                                      accessibilityLabel="Busy (Private Event)"
+                                    >
+                                      <View
+                                        style={{
+                                          flexDirection: 'row',
+                                          alignItems: 'center',
+                                          gap: 3,
+                                        }}
+                                      >
+                                        <Svg
+                                          width={9}
+                                          height={9}
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                        >
+                                          <Rect
+                                             x="3"
+                                             y="11"
+                                             width="18"
+                                             height="11"
+                                             rx="2"
+                                             stroke="#172019"
+                                             strokeWidth={2.4}
+                                          />
+                                          <Path
+                                             d="M7 11V7a5 5 0 0 1 10 0v4"
+                                             stroke="#172019"
+                                             strokeWidth={2.4}
+                                             strokeLinecap="round"
+                                          />
+                                        </Svg>
+                                        <Text
+                                          style={styles.weekBusyTitle}
+                                          numberOfLines={1}
+                                        >
+                                          Busy
+                                        </Text>
+                                      </View>
+                                      <Text
+                                        style={styles.weekBusyTime}
+                                        numberOfLines={1}
+                                      >
+                                        {item.timeRange ||
+                                          `${item.startTime}–${item.endTime}`}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  );
+                                }
+
                                 return (
                                   <TouchableOpacity
                                     key={item.id}
@@ -765,6 +1156,53 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
                   const blockHeight = duration * HOUR_HEIGHT - 4;
 
                   if (item.isBusy) {
+                    if (isPrivateSchedule || item.isPrivate) {
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={[
+                            styles.sharedBusyPrivateBlock,
+                            {
+                              top: blockTop,
+                              height: blockHeight,
+                            },
+                          ]}
+                          onPress={() => setPrivateNoticeSlot(item)}
+                          activeOpacity={0.8}
+                          accessibilityLabel="Busy (Private Event)"
+                        >
+                          <View style={styles.sharedBusyPrivateTopRow}>
+                            <View style={styles.sharedBusyPrivateLeftRow}>
+                              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                                <Rect
+                                  x="3"
+                                  y="11"
+                                  width="18"
+                                  height="11"
+                                  rx="2"
+                                  stroke="#172019"
+                                  strokeWidth={2.4}
+                                />
+                                <Path
+                                  d="M7 11V7a5 5 0 0 1 10 0v4"
+                                  stroke="#172019"
+                                  strokeWidth={2.4}
+                                  strokeLinecap="round"
+                                />
+                              </Svg>
+                              <Text style={styles.sharedBusyPrivateTitle}>
+                                Busy
+                              </Text>
+                            </View>
+                            <Text style={styles.sharedBusyPrivateTimeRange}>
+                              {item.timeRange ||
+                                `${item.startTime}–${item.endTime}`}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    }
+
                     return (
                       <View
                         key={item.id}
@@ -840,8 +1278,56 @@ export const FriendScheduleScreen: React.FC<FriendScheduleScreenProps> = ({
               </View>
             </View>
           )}
+        </>
+      )}
         </View>
       </ScrollView>
+
+      {/* Privacy Notice Detail Modal (UI-31) */}
+      <Modal
+        visible={!!privateNoticeSlot}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPrivateNoticeSlot(null)}
+      >
+        <Pressable
+          style={styles.privacyModalOverlay}
+          onPress={() => setPrivateNoticeSlot(null)}
+        >
+          <Pressable style={styles.privacyModalContainer}>
+            <View style={styles.privacyModalHeader}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <Rect
+                  x="3"
+                  y="11"
+                  width="18"
+                  height="11"
+                  rx="2"
+                  stroke="#1A251D"
+                  strokeWidth={2.2}
+                />
+                <Path
+                  d="M7 11V7a5 5 0 0 1 10 0v4"
+                  stroke="#1A251D"
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <Text style={styles.privacyModalTitle}>Privacy-Restricted Event</Text>
+            </View>
+            <Text style={styles.privacyModalBody}>
+              {friendName} has set their schedule privacy to "Availability only". Event titles, room locations, and course codes are hidden to protect privacy.
+            </Text>
+            <TouchableOpacity
+              style={styles.privacyModalCloseBtn}
+              onPress={() => setPrivateNoticeSlot(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.privacyModalCloseBtnText}>Got it</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Bottom Nav Bar */}
       <BottomNavBar

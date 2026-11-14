@@ -537,6 +537,9 @@ export const PROJECT_TEAM_MEMBERS: SharedCalendarFriend[] = [
     nickname: 'Chloe',
     initials: 'CP',
     isPrivate: true, // Privacy indicator for SS-06
+    scheduleState: 'privacy-restricted',
+    privacyNotice: 'Chloe limits what she shares',
+    privacyNoticeSub: 'You can see busy and free times. Titles and rooms are hidden.',
     scheduleByDate: {
       [OCT_19]: CHLOE_SCHEDULE_OCT_19,
       [OCT_20]: CHLOE_OCT_20,
@@ -563,6 +566,50 @@ export const PROJECT_TEAM_MEMBERS: SharedCalendarFriend[] = [
     },
   },
 ];
+
+// SS-06: Figma UI-31 Missing Schedule Friend (Priya Nair)
+export const PRIYA_NAIR: SharedCalendarFriend = {
+  id: 'friend-priya',
+  name: 'Priya Nair',
+  nickname: 'Priya',
+  initials: 'PN',
+  hasMissingSchedule: true,
+  scheduleState: 'missing',
+  privacyNotice: 'Priya hasn’t shared a schedule',
+  privacyNoticeSub: 'We can’t tell when Priya is free, so they aren’t counted as available in the group.',
+  scheduleByDate: {
+    [OCT_19]: [],
+    [OCT_20]: [],
+    [OCT_21]: [],
+    [OCT_22]: [],
+    [OCT_23]: [],
+    [OCT_24]: [],
+    [OCT_25]: [],
+  },
+};
+
+// SS-06: Figma UI-31 Unavailable Data Friend (Marcus Kim)
+export const MARCUS_KIM: SharedCalendarFriend = {
+  id: 'friend-marcus',
+  name: 'Marcus Kim',
+  nickname: 'Marcus',
+  initials: 'MK',
+  isUnavailable: true,
+  scheduleState: 'unavailable',
+  errorMessage: 'sample error',
+  lastChecked: 'sample error',
+  privacyNotice: 'Couldn’t load Marcus’s schedule',
+  privacyNoticeSub: 'This isn’t the same as being free. They aren’t counted as available until it loads.',
+  scheduleByDate: {
+    [OCT_19]: [],
+    [OCT_20]: [],
+    [OCT_21]: [],
+    [OCT_22]: [],
+    [OCT_23]: [],
+    [OCT_24]: [],
+    [OCT_25]: [],
+  },
+};
 
 // Additional groups for testing filters
 export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
@@ -692,6 +739,7 @@ export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
     nickname: 'Carlos',
     initials: 'CM',
     hasMissingSchedule: true,
+    scheduleState: 'missing',
     scheduleByDate: {
       [OCT_19]: [],
       [OCT_20]: [],
@@ -704,14 +752,14 @@ export const IT_PWENDS_MEMBERS: SharedCalendarFriend[] = [
   },
 ];
 
-// 6 Members for "All Friends" (2 schedules unavailable: Chloe is private, Carlos is missing)
+// 6 Members for "All Friends" (2 schedules unavailable: Chloe is private, Priya is missing, Marcus is unavailable)
 export const ALL_FRIENDS_MEMBERS: SharedCalendarFriend[] = [
   PROJECT_TEAM_MEMBERS[0], // Ava
   PROJECT_TEAM_MEMBERS[1], // Ben
-  PROJECT_TEAM_MEMBERS[2], // Chloe (Private)
+  PROJECT_TEAM_MEMBERS[2], // Chloe (Privacy-Restricted - SS-06)
   PROJECT_TEAM_MEMBERS[3], // Dev
-  IT_PWENDS_MEMBERS[0],    // Kai
-  IT_PWENDS_MEMBERS[3],    // Carlos (Missing schedule)
+  PRIYA_NAIR,              // Priya (Missing Schedule - SS-06)
+  MARCUS_KIM,              // Marcus (Unavailable Data - SS-06)
 ];
 
 // 3 Members for "Close Friends"
@@ -737,7 +785,20 @@ export const SHARED_FRIEND_GROUPS: SharedFriendGroup[] = [
     members: ALL_FRIENDS_MEMBERS,
     statusSummary: '6 people · 2 schedules unavailable',
     unavailableCount: 2,
-    description: 'All connected friends schedule',
+    missingCount: 1,
+    description: 'All connected friends schedule with varied states',
+  },
+  {
+    id: 'grp-ui31-special',
+    name: 'UI-31 States (SS-06)',
+    memberCount: 3,
+    members: [
+      PROJECT_TEAM_MEMBERS[2], // Chloe Park (Privacy-restricted)
+      PRIYA_NAIR,              // Priya Nair (Missing schedule)
+      MARCUS_KIM,              // Marcus Kim (Unavailable data)
+    ],
+    statusSummary: '3 people · Privacy, Missing, Unavailable',
+    description: 'Assigned ticket SS-06 states from Figma UI-31',
   },
   {
     id: 'grp-project-team',
@@ -912,7 +973,12 @@ export function calculateOverlappingWindows(
   for (let h = 8.0; h < 18.0; h += 0.5) {
     let freeCount = 0;
     friends.forEach((friend) => {
-      if (friend.hasMissingSchedule) {
+      if (
+        friend.hasMissingSchedule ||
+        friend.isUnavailable ||
+        friend.scheduleState === 'missing' ||
+        friend.scheduleState === 'unavailable'
+      ) {
         return;
       }
       const schedule = getFriendScheduleForDateKey(friend, dateKey);
@@ -1493,7 +1559,14 @@ export function findSharedFriendById(
     const friend = group.members.find((m) => m.id === id);
     if (friend) return friend;
   }
-  return undefined;
+  const allKnown = [
+    ...PROJECT_TEAM_MEMBERS,
+    ...ALL_FRIENDS_MEMBERS,
+    PRIYA_NAIR,
+    MARCUS_KIM,
+    ...IT_PWENDS_MEMBERS,
+  ];
+  return allKnown.find((m) => m.id === id);
 }
 
 export interface ChronologicalScheduleSlot {
@@ -1510,7 +1583,7 @@ export interface ChronologicalScheduleSlot {
 }
 
 /**
- * SS-05: Returns a full 8 AM - 6 PM chronological breakdown of occupied classes and free intervals
+ * SS-05 / SS-06: Returns a full 8 AM - 6 PM chronological breakdown of occupied classes and free intervals
  */
 export function getChronologicalScheduleForDay(
   friend: SharedCalendarFriend,
@@ -1518,8 +1591,13 @@ export function getChronologicalScheduleForDay(
   startBound = 8.0,
   endBound = 18.0
 ): ChronologicalScheduleSlot[] {
-  // If the friend has missing schedule or is empty, return empty list
-  if (friend.hasMissingSchedule) {
+  // If the friend has missing schedule or unavailable data, return empty list (SS-06)
+  if (
+    friend.hasMissingSchedule ||
+    friend.isUnavailable ||
+    friend.scheduleState === 'missing' ||
+    friend.scheduleState === 'unavailable'
+  ) {
     return [];
   }
 
