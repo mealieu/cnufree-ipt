@@ -132,6 +132,11 @@ export const HomeScreen: React.FC = () => {
       <FriendScheduleScreen
         friend={viewingSchedulePerson}
         onBack={() => setViewingSchedulePerson(null)}
+        onNavigateTab={(tab) => {
+          setViewingSchedulePerson(null);
+          setActiveTab(tab);
+        }}
+        sourceScreen="home"
       />
     );
   }

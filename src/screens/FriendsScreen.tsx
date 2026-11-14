@@ -331,6 +331,11 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({
       <FriendScheduleScreen
         friend={selectedScheduleFriend}
         onBack={() => setSelectedScheduleFriend(null)}
+        onNavigateTab={(tab) => {
+          setSelectedScheduleFriend(null);
+          onNavigateTab?.(tab);
+        }}
+        sourceScreen="friends"
       />
     );
   }
