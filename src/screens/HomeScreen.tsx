@@ -133,22 +133,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     );
   }
 
-  // If viewing Profile & Settings screen with Edit Profile (PS-01 / PS-02)
-  if (activeTab === 'profile') {
-    return (
-      <ProfileScreen
-        onNavigateTab={(tab) => setActiveTab(tab)}
-        onLogout={onLogout}
-        onViewMySchedule={() => setViewingSchedulePerson('me')}
-      />
-    );
-  }
-
-  // If viewing personal schedule (HS-05)
+  // If viewing personal schedule (PS-03 / HS-05)
   if (viewingSchedulePerson === 'me') {
     return (
       <PersonalScheduleScreen
         onBack={() => setViewingSchedulePerson(null)}
+        onNavigateTab={(tab) => {
+          setViewingSchedulePerson(null);
+          setActiveTab(tab);
+        }}
       />
     );
   }
@@ -164,6 +157,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
           setActiveTab(tab);
         }}
         sourceScreen="home"
+      />
+    );
+  }
+
+  // If viewing Profile & Settings screen with Edit Profile (PS-01 / PS-02)
+  if (activeTab === 'profile') {
+    return (
+      <ProfileScreen
+        onNavigateTab={(tab) => setActiveTab(tab)}
+        onLogout={onLogout}
+        onViewMySchedule={() => setViewingSchedulePerson('me')}
       />
     );
   }

@@ -132,7 +132,6 @@ export interface FriendsScreenProps {
 }
 
 /**
-<<<<<<< HEAD
  * Props for the Received Friend Requests Screen (FS-04 / FS-05)
  */
 export interface ReceivedFriendRequestsScreenProps {
