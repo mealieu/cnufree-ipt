@@ -13,7 +13,11 @@ import { AuthToggle } from '../components/auth/AuthToggle';
 import { AuthInput } from '../components/auth/AuthInput';
 import { PrimaryButton } from '../components/PrimaryButton'; // Reusing existing component if suitable, or wrapping below
 
-export const AuthScreen = () => {
+export interface AuthScreenProps {
+  onLoginSuccess?: () => void;
+}
+
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
@@ -91,7 +95,11 @@ export const AuthScreen = () => {
           {/* Submit Button */}
           <View style={styles.submitContainer}>
             {/* If PrimaryButton.tsx accepts custom styles/colors, use it. Otherwise, implementing a direct replica here for accuracy. */}
-            <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              activeOpacity={0.8}
+              onPress={() => onLoginSuccess?.()}
+            >
               <Text style={styles.submitButtonText}>
                 {isLogin ? 'Login' : 'Create account'}
               </Text>
