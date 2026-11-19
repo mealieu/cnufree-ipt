@@ -33,11 +33,12 @@ export interface PersonalScheduleDay {
 
 export interface ScheduleEntryFormData {
   id?: string;
-  title: string;
+  title: string;          // Activity name, e.g. "UI/UX Design Studio"
   isBusy: boolean;
   dayKey: string;
-  startTime: string;
-  endTime: string;
+  date?: string;          // "24 / 10 / 2026"
+  startTime: string;      // e.g. "7:00 AM"
+  endTime: string;        // e.g. "8:00 AM"
   timeMarker?: string;
   room?: string;
   notes?: string;

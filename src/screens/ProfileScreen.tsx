@@ -263,12 +263,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onClose={() => setIsSharedLinksVisible(false)}
       />
 
-      {/* 4. Add Schedule Block Modal */}
+      {/* 4. Add Schedule Block Modal (PS-05) */}
       <AddScheduleModal
         visible={isAddScheduleVisible}
         onClose={() => setIsAddScheduleVisible(false)}
-        onAdded={(block: { title: string; day: string; time: string; room?: string }) => {
-          showFeedback(`Added "${block.title}" on ${block.day} (${block.time})`);
+        onAdded={(block: { title: string; day: string; time: string; date?: string; room?: string; notes?: string }) => {
+          showFeedback(`Added "${block.title}" on ${block.date || block.day} (${block.time})`);
         }}
       />
 
