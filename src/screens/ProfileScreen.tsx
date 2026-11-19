@@ -20,6 +20,7 @@ import { SharedLinksModal } from '../components/profile/SharedLinksModal';
 import { AddScheduleModal } from '../components/profile/AddScheduleModal';
 import { ImportScheduleModal } from '../components/profile/ImportScheduleModal';
 import { LogoutConfirmModal } from '../components/profile/LogoutConfirmModal';
+import { PersonalScheduleModal } from '../components/personalSchedule/PersonalScheduleModal';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 
 export interface ProfileScreenProps {
@@ -57,6 +58,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   // Modal display states for all clickables
+  const [isMyScheduleVisible, setIsMyScheduleVisible] = useState(false);
   const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
   const [isVisibilityModalVisible, setIsVisibilityModalVisible] = useState(false);
   const [currentVisibility, setCurrentVisibility] = useState<VisibilityOption>('friends');
@@ -88,11 +90,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onEditProfile?.();
         break;
       case 'my_schedule':
-        if (onViewMySchedule) {
-          onViewMySchedule();
-        } else {
-          showFeedback('Opening personal schedule...');
-        }
+        setIsMyScheduleVisible(true);
         break;
       case 'import_schedule':
         setIsImportScheduleVisible(true);
@@ -108,11 +106,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const handleSettingItemPress = (item: SettingItemConfig) => {
     switch (item.id) {
       case 'view_my_schedule':
-        if (onViewMySchedule) {
-          onViewMySchedule();
-        } else {
-          showFeedback('Opening personal schedule...');
-        }
+        setIsMyScheduleVisible(true);
         break;
       case 'add_schedule':
         setIsAddScheduleVisible(true);
@@ -294,6 +288,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         backendConfigured={authService.isBackendConfigured()}
         onCancel={() => setIsLogoutModalVisible(false)}
         onConfirm={handleConfirmLogout}
+      />
+
+      {/* 7. Personal Daily Schedule Modal (PS-03) */}
+      <PersonalScheduleModal
+        visible={isMyScheduleVisible}
+        onClose={() => setIsMyScheduleVisible(false)}
+        onNavigateTab={onNavigateTab}
       />
 
       {/* Bottom Nav Bar */}
