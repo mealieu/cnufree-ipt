@@ -34,6 +34,13 @@ export interface SettingItemConfig {
   isDestructive?: boolean;
 }
 
+export interface ProfileValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  general?: string;
+}
+
 export interface ProfileSectionConfig {
   id: string;
   title: string;

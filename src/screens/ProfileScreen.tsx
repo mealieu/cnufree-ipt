@@ -14,6 +14,11 @@ import { getStoredProfile, subscribeToProfile } from '../mock/profileData';
 import { authService } from '../services/authService';
 import { ProfileQuickActions } from '../components/profile/ProfileQuickActions';
 import { ProfileSettingsSection } from '../components/profile/ProfileSettingsSection';
+import { EditProfileModal } from '../components/profile/EditProfileModal';
+import { ScheduleVisibilityModal, VisibilityOption } from '../components/profile/ScheduleVisibilityModal';
+import { SharedLinksModal } from '../components/profile/SharedLinksModal';
+import { AddScheduleModal } from '../components/profile/AddScheduleModal';
+import { ImportScheduleModal } from '../components/profile/ImportScheduleModal';
 import { LogoutConfirmModal } from '../components/profile/LogoutConfirmModal';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
 
@@ -49,9 +54,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onViewMySchedule,
 }) => {
   const [userProfile, setUserProfile] = useState<UserProfileData>(getStoredProfile());
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  // Modal display states for all clickables
+  const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
+  const [isVisibilityModalVisible, setIsVisibilityModalVisible] = useState(false);
+  const [currentVisibility, setCurrentVisibility] = useState<VisibilityOption>('friends');
+  const [isSharedLinksVisible, setIsSharedLinksVisible] = useState(false);
+  const [isAddScheduleVisible, setIsAddScheduleVisible] = useState(false);
+  const [isImportScheduleVisible, setIsImportScheduleVisible] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   // Subscribe to live profile updates
   useEffect(() => {
@@ -71,11 +84,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const handleQuickAction = (actionId: string) => {
     switch (actionId) {
       case 'edit_profile':
-        if (onEditProfile) {
-          onEditProfile();
-        } else {
-          showFeedback('Edit profile action triggered.');
-        }
+        setIsEditProfileVisible(true);
+        onEditProfile?.();
         break;
       case 'my_schedule':
         if (onViewMySchedule) {
@@ -85,10 +95,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }
         break;
       case 'import_schedule':
-        showFeedback('Import schedule module is integration-ready.');
+        setIsImportScheduleVisible(true);
         break;
       case 'share_link':
-        showFeedback('Personal schedule link copied to clipboard.');
+        setIsSharedLinksVisible(true);
         break;
       default:
         break;
@@ -105,16 +115,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }
         break;
       case 'add_schedule':
-        showFeedback('Add Schedule form is ready for schedule integration.');
+        setIsAddScheduleVisible(true);
         break;
       case 'import_schedule':
-        showFeedback('Import Schedule feature is integration-ready.');
+        setIsImportScheduleVisible(true);
         break;
       case 'schedule_visibility':
-        showFeedback('Privacy settings: Schedule is currently visible to Accepted Friends.');
+        setIsVisibilityModalVisible(true);
         break;
       case 'shared_links':
-        showFeedback('Sharing settings: 0 active public schedule links.');
+        setIsSharedLinksVisible(true);
         break;
       case 'friend_groups_settings':
         onNavigateTab?.('friends');
@@ -184,7 +194,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </Text>
           </View>
 
-          {/* Quick Actions (4-circle row) */}
+          {/* Quick Actions (4-circle row matching Figma PS-01) */}
           <ProfileQuickActions
             onEditProfile={() => handleQuickAction('edit_profile')}
             onMySchedule={() => handleQuickAction('my_schedule')}
@@ -222,7 +232,62 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
       </ScrollView>
 
-      {/* Logout Confirmation Modal */}
+      {/* 1. Edit Profile Modal (Figma PS-02) */}
+      <EditProfileModal
+        visible={isEditProfileVisible}
+        currentProfile={userProfile}
+        onClose={() => setIsEditProfileVisible(false)}
+        onSaved={(updated: UserProfileData) => {
+          setUserProfile(updated);
+          showFeedback('Profile updated successfully!');
+        }}
+      />
+
+      {/* 2. Schedule Visibility / Privacy Settings Modal */}
+      <ScheduleVisibilityModal
+        visible={isVisibilityModalVisible}
+        currentVisibility={currentVisibility}
+        onClose={() => setIsVisibilityModalVisible(false)}
+        onSave={(newVisibility: VisibilityOption) => {
+          setCurrentVisibility(newVisibility);
+          showFeedback(
+            `Visibility updated to: ${
+              newVisibility === 'friends'
+                ? 'Accepted Friends Only'
+                : newVisibility === 'public'
+                ? 'Campus Community (Public)'
+                : 'Private (Only Me)'
+            }`
+          );
+        }}
+      />
+
+      {/* 3. Shared Links Modal */}
+      <SharedLinksModal
+        visible={isSharedLinksVisible}
+        username={userProfile.username}
+        onClose={() => setIsSharedLinksVisible(false)}
+      />
+
+      {/* 4. Add Schedule Block Modal */}
+      <AddScheduleModal
+        visible={isAddScheduleVisible}
+        onClose={() => setIsAddScheduleVisible(false)}
+        onAdded={(block: { title: string; day: string; time: string; room?: string }) => {
+          showFeedback(`Added "${block.title}" on ${block.day} (${block.time})`);
+        }}
+      />
+
+      {/* 5. Import Schedule Modal */}
+      <ImportScheduleModal
+        visible={isImportScheduleVisible}
+        onClose={() => setIsImportScheduleVisible(false)}
+        onImported={() => {
+          showFeedback('Schedule imported and synced successfully!');
+        }}
+      />
+
+      {/* 6. Logout Confirmation Modal */}
       <LogoutConfirmModal
         visible={isLogoutModalVisible}
         isSubmitting={isLoggingOut}
