@@ -10,6 +10,27 @@ export interface UserProfileData {
   bio?: string;
 }
 
+export interface UpdateProfilePayload {
+  firstName: string;
+  lastName: string;
+  username: string;
+}
+
+export interface ProfileValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  general?: string;
+}
+
+export interface UpdateProfileResult {
+  success: boolean;
+  profile?: UserProfileData;
+  errors?: ProfileValidationErrors;
+  backendConfigured: boolean;
+  message: string;
+}
+
 export type ProfileQuickActionId =
   | 'edit_profile'
   | 'my_schedule'
@@ -32,13 +53,6 @@ export interface SettingItemConfig {
   title: string;
   iconName: string;
   isDestructive?: boolean;
-}
-
-export interface ProfileValidationErrors {
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  general?: string;
 }
 
 export interface ProfileSectionConfig {

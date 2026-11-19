@@ -133,7 +133,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     );
   }
 
-  // If viewing Profile & Settings screen (PS-01)
+  // If viewing Profile & Settings screen with Edit Profile (PS-01 / PS-02)
   if (activeTab === 'profile') {
     return (
       <ProfileScreen
