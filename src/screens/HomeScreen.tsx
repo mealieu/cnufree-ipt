@@ -40,6 +40,7 @@ import { PersonalScheduleScreen } from './PersonalScheduleScreen';
 import { FriendsScreen } from './FriendsScreen';
 import { SharedScheduleScreen } from './SharedScheduleScreen';
 import { NotificationsScreen } from './NotificationsScreen';
+import { EditProfileScreen } from './EditProfileScreen';
 import { TabId } from '../types/navigation';
 
 export const HomeScreen: React.FC = () => {
@@ -124,6 +125,16 @@ export const HomeScreen: React.FC = () => {
       <NotificationsScreen
         onBack={() => setActiveTab('home')}
         onNavigateTab={(tab) => setActiveTab(tab)}
+      />
+    );
+  }
+
+  // If viewing Edit Profile screen (PS-02)
+  if (activeTab === 'profile') {
+    return (
+      <EditProfileScreen
+        onSaveSuccess={() => setActiveTab('home')}
+        onCancel={() => setActiveTab('home')}
       />
     );
   }
