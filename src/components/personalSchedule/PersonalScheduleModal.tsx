@@ -16,10 +16,18 @@ import {
   PersonalSchedulePeriod,
   PersonalScheduleViewMode,
   ScheduleEntryFormData,
+  WeeklyScheduleDay,
+  WeeklyScheduleSlot,
+  WeeklyScheduleWeek,
 } from '../../types/personalSchedule';
-import { getInitialPersonalScheduleDays } from '../../mock/personalScheduleData';
+import {
+  getInitialPersonalScheduleDays,
+  getInitialWeeklyScheduleWeeks,
+} from '../../mock/personalScheduleData';
 import { PeriodActionModal } from './PeriodActionModal';
 import { EditScheduleEntryModal } from './EditScheduleEntryModal';
+import { DailyScheduleDetailModal } from './DailyScheduleDetailModal';
+import { WeeklyScheduleGrid } from './WeeklyScheduleGrid';
 import { ConfirmDialogModal } from '../notifications/ConfirmDialogModal';
 import { FeedbackToast } from '../notifications/FeedbackToast';
 import { FeedbackToastConfig } from '../../types/notifications';
@@ -40,6 +48,20 @@ export const PersonalScheduleModal: React.FC<PersonalScheduleModalProps> = ({
 }) => {
   // 1. View Mode State: 'daily' vs 'weekly' (PS-03 vs PS-04)
   const [viewMode, setViewMode] = useState<PersonalScheduleViewMode>(initialViewMode);
+
+  // 1B. Weekly Schedule Weeks State & Navigation (PS-04)
+  const [weeklyWeeks] = useState<WeeklyScheduleWeek[]>(() =>
+    getInitialWeeklyScheduleWeeks()
+  );
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(1); // Default to week-2 (Oct 19 - 25, 2026)
+  const currentWeek = useMemo(() => {
+    return weeklyWeeks[selectedWeekIndex] || weeklyWeeks[0];
+  }, [weeklyWeeks, selectedWeekIndex]);
+
+  // Weekly Schedule Details Modal State (PS-04)
+  const [selectedDayForDetail, setSelectedDayForDetail] = useState<WeeklyScheduleDay | null>(null);
+  const [selectedSlotForDetail, setSelectedSlotForDetail] = useState<WeeklyScheduleSlot | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
 
   // 2. Central Schedule Days Data State
   const [scheduleDays, setScheduleDays] = useState<PersonalScheduleDay[]>(() =>
@@ -121,6 +143,34 @@ export const PersonalScheduleModal: React.FC<PersonalScheduleModalProps> = ({
       setSelectedDayKey(scheduleDays[0].dayKey);
     }
   }, [currentDayIndex, scheduleDays]);
+
+  // Weekly Navigation (< and > buttons) (PS-04)
+  const handlePrevWeek = useCallback(() => {
+    setSelectedWeekIndex((prev) => (prev > 0 ? prev - 1 : weeklyWeeks.length - 1));
+  }, [weeklyWeeks.length]);
+
+  const handleNextWeek = useCallback(() => {
+    setSelectedWeekIndex((prev) => (prev < weeklyWeeks.length - 1 ? prev + 1 : 0));
+  }, [weeklyWeeks.length]);
+
+  // Weekly Schedule Details Actions (PS-04)
+  const handleSelectDayFromWeekly = useCallback((day: WeeklyScheduleDay) => {
+    setSelectedDayForDetail(day);
+    setSelectedSlotForDetail(null);
+    setIsDetailModalOpen(true);
+  }, []);
+
+  const handleSelectSlotFromWeekly = useCallback((day: WeeklyScheduleDay, slot: WeeklyScheduleSlot) => {
+    setSelectedDayForDetail(day);
+    setSelectedSlotForDetail(slot);
+    setIsDetailModalOpen(true);
+  }, []);
+
+  const handleOpenDailyViewFromWeekly = useCallback((dayKey: string) => {
+    setIsDetailModalOpen(false);
+    setSelectedDayKey(dayKey);
+    setViewMode('daily');
+  }, []);
 
   // --- Schedule Editing Action Handlers (PS-03) ---
 
@@ -339,206 +389,239 @@ export const PersonalScheduleModal: React.FC<PersonalScheduleModalProps> = ({
               </View>
             </View>
 
-            {/* 3. Date Navigation Bar (< Date >) */}
-            <View style={styles.dateNavBar}>
-              <TouchableOpacity
-                style={styles.dateNavArrow}
-                onPress={handlePrevDay}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Previous day"
-              >
-                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M15 19L8 12L15 5"
-                    stroke="#172019"
-                    strokeWidth={2.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-
-              <View style={styles.dateNavDisplayBox}>
-                <Text style={styles.dateNavDisplayText} numberOfLines={1}>
-                  {currentDay.fullDateString}
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.dateNavArrow}
-                onPress={handleNextDay}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Next day"
-              >
-                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M9 5L16 12L9 19"
-                    stroke="#172019"
-                    strokeWidth={2.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-            </View>
-
-            {/* 4. Weekday Filter Pills (Mon 19 | Tue 19 | Wed 21 | Thurs 22 | Fri 23 | Sat 24 | Sun 25) */}
-            <View style={styles.weekdayRow}>
-              {scheduleDays.map((day) => {
-                const isSelected = day.dayKey === selectedDayKey;
-                return (
-                  <TouchableOpacity
-                    key={day.dayKey}
-                    style={[
-                      styles.weekdayCard,
-                      isSelected && styles.weekdayCardActive,
-                    ]}
-                    onPress={() => setSelectedDayKey(day.dayKey)}
-                    activeOpacity={0.78}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${day.dayShort} ${day.dayDate}`}
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    <Text
-                      style={[
-                        styles.weekdayDayName,
-                        isSelected && styles.weekdayDayNameActive,
-                      ]}
-                    >
-                      {day.dayShort}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.weekdayDateNum,
-                        isSelected && styles.weekdayDateNumActive,
-                      ]}
-                    >
-                      {day.dayDate}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* 5. Main Schedule Container (Green Outline Box) */}
+            {/* 3. Conditional Navigation & Content: DAILY (PS-03) vs WEEKLY (PS-04) */}
             {viewMode === 'daily' ? (
-              <View>
-                <View style={styles.scheduleBoxContainer}>
-                  {/* List of Occupied and Free Periods */}
-                  {currentDay.periods.length === 0 ? (
-                    <View style={styles.emptyStateContainer}>
-                      <Text style={styles.emptyStateTitle}>No scheduled periods</Text>
-                      <Text style={styles.emptyStateSubtitle}>
-                        You have not set any classes, events, or free time for this day.
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.emptyStateAddBtn}
-                        onPress={handleOpenAdd}
-                        activeOpacity={0.82}
-                        accessibilityRole="button"
-                        accessibilityLabel="Add schedule entry"
-                      >
-                        <Text style={styles.emptyStateAddBtnText}>+ Add Schedule Entry</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.periodsList}>
-                      {currentDay.periods.map((period) => {
-                        return (
-                          <View key={period.id} style={styles.periodRow}>
-                            {/* Left: Uniform Time Pill */}
-                            <View style={styles.timePill}>
-                              <Text style={styles.timePillText} numberOfLines={1}>
-                                {period.timeMarker}
-                              </Text>
-                            </View>
-
-                            {/* Right: Uniform Schedule Card (Tappable for editing actions) */}
-                            <TouchableOpacity
-                              style={styles.periodCard}
-                              onPress={() => handlePeriodPress(period)}
-                              activeOpacity={0.84}
-                              accessibilityRole="button"
-                              accessibilityLabel={`${period.isBusy ? 'Occupied' : 'Free'}: ${period.title}, ${period.timeRange}`}
-                            >
-                              {/* Status Icon Ring / Outline */}
-                              <View style={styles.iconContainer}>
-                                {period.isBusy ? (
-                                  <View style={styles.busySquareOutline} />
-                                ) : (
-                                  <View style={styles.freeCircleOutline} />
-                                )}
-                              </View>
-
-                              {/* Text Information: Uniform 2-Line Layout */}
-                              <View style={styles.periodTextContainer}>
-                                <Text style={styles.periodTitleText} numberOfLines={1}>
-                                  {period.title}
-                                </Text>
-                                <Text style={styles.periodTimeRangeText} numberOfLines={1}>
-                                  {period.timeRange}
-                                </Text>
-                              </View>
-                            </TouchableOpacity>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-
-                {/* Add Entry Schedule Editing Action (PS-03) */}
-                <TouchableOpacity
-                  style={styles.addEntryBottomBtn}
-                  onPress={handleOpenAdd}
-                  activeOpacity={0.82}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add new schedule entry"
-                >
-                  <Text style={styles.addEntryBottomBtnText}>+ Add Schedule Block</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              /* ================= PS-04 SCAFFOLDING ================= */
-              // TODO: [TEMP HARNESS FOR PS-04 - REMOVE ON MERGE]
-              <View style={styles.weeklyScaffoldContainer}>
-                <View style={styles.weeklyScaffoldCard}>
-                  <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z"
-                      stroke="#2D4333"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <Path
-                      d="M16 2V6M8 2V6M3 10H21"
-                      stroke="#2D4333"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                  <Text style={styles.weeklyScaffoldTitle}>Weekly Schedule View</Text>
-                  <Text style={styles.weeklyScaffoldDesc}>
-                    Teammate ticket [PS-04] will implement the personal weekly schedule view with weekly navigation.
-                  </Text>
+              <>
+                {/* 3A. Date Navigation Bar (< Date >) */}
+                <View style={styles.dateNavBar}>
                   <TouchableOpacity
-                    style={styles.switchBackDailyBtn}
-                    onPress={() => setViewMode('daily')}
-                    activeOpacity={0.82}
+                    style={styles.dateNavArrow}
+                    onPress={handlePrevDay}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Previous day"
                   >
-                    <Text style={styles.switchBackDailyBtnText}>Switch to Daily View</Text>
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M15 19L8 12L15 5"
+                        stroke="#172019"
+                        strokeWidth={2.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+
+                  <View style={styles.dateNavDisplayBox}>
+                    <Text style={styles.dateNavDisplayText} numberOfLines={1}>
+                      {currentDay.fullDateString}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.dateNavArrow}
+                    onPress={handleNextDay}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Next day"
+                  >
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M9 5L16 12L9 19"
+                        stroke="#172019"
+                        strokeWidth={2.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
                   </TouchableOpacity>
                 </View>
+
+                {/* 3B. Weekday Filter Pills (Mon 19 | Tue 19 | Wed 21 | Thurs 22 | Fri 23 | Sat 24 | Sun 25) */}
+                <View style={styles.weekdayRow}>
+                  {scheduleDays.map((day) => {
+                    const isSelected = day.dayKey === selectedDayKey;
+                    return (
+                      <TouchableOpacity
+                        key={day.dayKey}
+                        style={[
+                          styles.weekdayCard,
+                          isSelected && styles.weekdayCardActive,
+                        ]}
+                        onPress={() => setSelectedDayKey(day.dayKey)}
+                        activeOpacity={0.78}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${day.dayShort} ${day.dayDate}`}
+                        accessibilityState={{ selected: isSelected }}
+                      >
+                        <Text
+                          style={[
+                            styles.weekdayDayName,
+                            isSelected && styles.weekdayDayNameActive,
+                          ]}
+                        >
+                          {day.dayShort}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.weekdayDateNum,
+                            isSelected && styles.weekdayDateNumActive,
+                          ]}
+                        >
+                          {day.dayDate}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* 3C. Main Daily Schedule Container (Green Outline Box) */}
+                <View>
+                  <View style={styles.scheduleBoxContainer}>
+                    {/* List of Occupied and Free Periods */}
+                    {currentDay.periods.length === 0 ? (
+                      <View style={styles.emptyStateContainer}>
+                        <Text style={styles.emptyStateTitle}>No scheduled periods</Text>
+                        <Text style={styles.emptyStateSubtitle}>
+                          You have not set any classes, events, or free time for this day.
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.emptyStateAddBtn}
+                          onPress={handleOpenAdd}
+                          activeOpacity={0.82}
+                          accessibilityRole="button"
+                          accessibilityLabel="Add schedule entry"
+                        >
+                          <Text style={styles.emptyStateAddBtnText}>+ Add Schedule Entry</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.periodsList}>
+                        {currentDay.periods.map((period) => {
+                          return (
+                            <View key={period.id} style={styles.periodRow}>
+                              {/* Left: Uniform Time Pill */}
+                              <View style={styles.timePill}>
+                                <Text style={styles.timePillText} numberOfLines={1}>
+                                  {period.timeMarker}
+                                </Text>
+                              </View>
+
+                              {/* Right: Uniform Schedule Card (Tappable for editing actions) */}
+                              <TouchableOpacity
+                                style={styles.periodCard}
+                                onPress={() => handlePeriodPress(period)}
+                                activeOpacity={0.84}
+                                accessibilityRole="button"
+                                accessibilityLabel={`${period.isBusy ? 'Occupied' : 'Free'}: ${period.title}, ${period.timeRange}`}
+                              >
+                                {/* Status Icon Ring / Outline */}
+                                <View style={styles.iconContainer}>
+                                  {period.isBusy ? (
+                                    <View style={styles.busySquareOutline} />
+                                  ) : (
+                                    <View style={styles.freeCircleOutline} />
+                                  )}
+                                </View>
+
+                                {/* Text Information: Uniform 2-Line Layout */}
+                                <View style={styles.periodTextContainer}>
+                                  <Text style={styles.periodTitleText} numberOfLines={1}>
+                                    {period.title}
+                                  </Text>
+                                  <Text style={styles.periodTimeRangeText} numberOfLines={1}>
+                                    {period.timeRange}
+                                  </Text>
+                                </View>
+                              </TouchableOpacity>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Add Entry Schedule Editing Action (PS-03) */}
+                  <TouchableOpacity
+                    style={styles.addEntryBottomBtn}
+                    onPress={handleOpenAdd}
+                    activeOpacity={0.82}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add new schedule entry"
+                  >
+                    <Text style={styles.addEntryBottomBtnText}>+ Add Schedule Block</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              /* ================= 4. PERSONAL WEEKLY SCHEDULE VIEW (PS-04) ================= */
+              <View>
+                {/* 4A. Weekly Navigation Bar (< Week Range >) */}
+                <View style={styles.weekNavBar}>
+                  <TouchableOpacity
+                    style={styles.weekNavArrow}
+                    onPress={handlePrevWeek}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Previous week"
+                  >
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M15 19L8 12L15 5"
+                        stroke="#172019"
+                        strokeWidth={2.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+
+                  <View style={styles.weekNavDisplayBox}>
+                    <Text style={styles.weekNavDisplayText} numberOfLines={1}>
+                      {currentWeek.weekRangeLabel}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.weekNavArrow}
+                    onPress={handleNextWeek}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Next week"
+                  >
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M9 5L16 12L9 19"
+                        stroke="#172019"
+                        strokeWidth={2.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 4B. 2-Column Weekly Schedule Grid (Matches Figma PS-04 wireframe) */}
+                <WeeklyScheduleGrid
+                  days={currentWeek.days}
+                  onSelectDay={handleSelectDayFromWeekly}
+                  onSelectSlot={handleSelectSlotFromWeekly}
+                />
               </View>
             )}
           </ScrollView>
         </View>
 
         {/* ================= MODALS & TOASTS ================= */}
+        {/* Daily Schedule Details Modal (PS-04) */}
+        <DailyScheduleDetailModal
+          visible={isDetailModalOpen}
+          day={selectedDayForDetail}
+          selectedSlot={selectedSlotForDetail}
+          onClose={() => setIsDetailModalOpen(false)}
+          onOpenDailyView={handleOpenDailyViewFromWeekly}
+        />
+
         <PeriodActionModal
           visible={isActionModalOpen}
           period={selectedPeriod}
@@ -915,44 +998,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#FFFFFF',
   },
-  weeklyScaffoldContainer: {
-    paddingVertical: 20,
+  weekNavBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#5C7057',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 12,
+  },
+  weekNavArrow: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  weeklyScaffoldCard: {
-    width: '100%',
-    backgroundColor: '#CFEAD6',
-    borderRadius: 14,
-    borderWidth: 1.4,
-    borderColor: '#3D5549',
-    padding: 22,
+  weekNavDisplayBox: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginHorizontal: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  weeklyScaffoldTitle: {
+  weekNavDisplayText: {
     fontFamily: FONTS.bold,
-    fontSize: 17,
+    fontSize: 13,
     color: '#151F17',
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  weeklyScaffoldDesc: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: '#2D4333',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  switchBackDailyBtn: {
-    backgroundColor: '#354837',
-    borderRadius: 8,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
-  switchBackDailyBtnText: {
-    fontFamily: FONTS.bold,
-    fontSize: 13,
-    color: '#FFFFFF',
   },
 });

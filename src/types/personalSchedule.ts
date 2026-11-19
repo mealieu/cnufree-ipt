@@ -43,6 +43,28 @@ export interface ScheduleEntryFormData {
   notes?: string;
 }
 
+export interface WeeklyScheduleSlot {
+  time: string;           // "7:00 AM", "8:00 AM", etc.
+  status: 'ACTIVITY' | 'FREE';
+  activityTitle?: string; // e.g. "UI/UX Design Studio"
+  room?: string;          // e.g. "AL211A"
+  notes?: string;         // e.g. "Lecture & critique"
+}
+
+export interface WeeklyScheduleDay {
+  dayKey: string;         // 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'
+  dayName: string;        // 'SUNDAY' | 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY'
+  dateNumber: string;     // '25', '19', '20', etc.
+  fullDateString: string; // 'Sunday, October 25, 2026'
+  slots: WeeklyScheduleSlot[];
+}
+
+export interface WeeklyScheduleWeek {
+  weekId: string;
+  weekRangeLabel: string; // e.g. "October 19 – 25, 2026"
+  days: WeeklyScheduleDay[];
+}
+
 export interface PersonalScheduleScreenProps {
   onBack: () => void;
   onNavigateTab?: (tab: TabId) => void;
