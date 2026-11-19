@@ -40,9 +40,14 @@ import { PersonalScheduleScreen } from './PersonalScheduleScreen';
 import { FriendsScreen } from './FriendsScreen';
 import { SharedScheduleScreen } from './SharedScheduleScreen';
 import { NotificationsScreen } from './NotificationsScreen';
+import { ProfileScreen } from './ProfileScreen';
 import { TabId } from '../types/navigation';
 
-export const HomeScreen: React.FC = () => {
+export interface HomeScreenProps {
+  onLogout?: () => void;
+}
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   // State
   const [activeTab, setActiveTab] = useState<TabId>('home');
@@ -124,6 +129,17 @@ export const HomeScreen: React.FC = () => {
       <NotificationsScreen
         onBack={() => setActiveTab('home')}
         onNavigateTab={(tab) => setActiveTab(tab)}
+      />
+    );
+  }
+
+  // If viewing Profile & Settings screen (PS-01)
+  if (activeTab === 'profile') {
+    return (
+      <ProfileScreen
+        onNavigateTab={(tab) => setActiveTab(tab)}
+        onLogout={onLogout}
+        onViewMySchedule={() => setViewingSchedulePerson('me')}
       />
     );
   }
