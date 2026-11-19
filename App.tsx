@@ -21,6 +21,8 @@ export default function App() {
     DMSans_700Bold,
   });
 
+  const [isAuthenticated, setIsAuthenticated] = React.useState(true);
+
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.cream }}>
@@ -30,10 +32,19 @@ export default function App() {
     );
   }
 
+  if (!isAuthenticated) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <AuthScreen onLoginSuccess={() => setIsAuthenticated(true)} />
+      </>
+    );
+  }
+
   return (
     <>
       <StatusBar style="dark" />
-      <HomeScreen/>
+      <HomeScreen onLogout={() => setIsAuthenticated(false)} />
     </>
   );
 }
