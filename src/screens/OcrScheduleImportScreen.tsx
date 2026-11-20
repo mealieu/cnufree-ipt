@@ -12,12 +12,13 @@ import { COLORS } from '../constants/colors';
 import { FONTS } from '../constants/typography';
 import { QuickActionIcons } from '../components/ocr/OcrIcons';
 import { OcrUploadSection } from '../components/ocr/OcrUploadSection';
+import { OcrReviewTable } from '../components/ocr/OcrReviewTable';
 import {
-  OcrImageSample,
+  OcrExtractedEntry,
   OcrScheduleImportScreenProps,
 } from '../types/ocrImport';
 import {
-  OCR_TIMETABLE_SAMPLES,
+  DEFAULT_EXTRACTED_SCHEDULES,
 } from '../mock/ocrData';
 
 export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = ({
@@ -25,34 +26,49 @@ export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = (
   onViewMySchedule,
   onImportSuccess,
 }) => {
-  // Step state: for PS-06, manages image upload and processing states
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Step state: 'upload' | 'processing' | 'review' (PS-07 adds the review table)
+  const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'review'>('upload');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+
+  // Extracted schedule entries that user can edit in PS-07 review screen
+  const [extractedEntries, setExtractedEntries] = useState<OcrExtractedEntry[]>(
+    DEFAULT_EXTRACTED_SCHEDULES
+  );
 
   // When a file is chosen from the user's device
   const handleFilePicked = (fileName: string) => {
     setUploadedFileName(fileName);
-    setIsProcessing(true);
+    setCurrentStep('processing');
   };
 
-  // Simulate OCR Processing timer and completion
+  // Simulate OCR Processing timer and transition to PS-07 Review Screen
   useEffect(() => {
-    if (!isProcessing) return;
+    if (currentStep !== 'processing') return;
 
     const timer = setTimeout(() => {
-      setIsProcessing(false);
-      if (onImportSuccess) {
-        onImportSuccess(OCR_TIMETABLE_SAMPLES[0].entries);
-      }
-    }, 2200);
+      setCurrentStep('review');
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, [isProcessing, onImportSuccess]);
+  }, [currentStep]);
+
+  // Review table actions (PS-07)
+  const handleConfirmAndSave = () => {
+    if (onImportSuccess) {
+      onImportSuccess(extractedEntries);
+    }
+    onClose();
+  };
+
+  const handleDiscardImport = () => {
+    setCurrentStep('upload');
+    setUploadedFileName(null);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* ================= BACKGROUND: PROFILE HEADER (FIGMA PS-06) ================= */}
+        {/* ================= BACKGROUND: PROFILE HEADER (FIGMA PS-06 / PS-07) ================= */}
         <View style={styles.profileBackgroundHeader}>
           {/* Avatar Circle */}
           <View style={styles.avatarCircle}>
@@ -110,7 +126,7 @@ export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = (
           </View>
         </View>
 
-        {/* ================= FOREGROUND: SAGE GREEN BOTTOM SHEET (PS-06) ================= */}
+        {/* ================= FOREGROUND: SAGE GREEN BOTTOM SHEET (PS-06 / PS-07) ================= */}
         <View style={styles.bottomSheetCard}>
           {/* Top Center White Handle */}
           <View style={styles.sheetHandleContainer}>
@@ -122,13 +138,25 @@ export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = (
             contentContainerStyle={styles.sheetScrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Upload or Processing State (PS-06) */}
-            <OcrUploadSection
-              isProcessing={isProcessing}
-              uploadedFileName={uploadedFileName}
-              onFilePicked={handleFilePicked}
-              onCancel={onClose}
-            />
+            {/* Step 1 & 2: Upload or Processing State (PS-06) */}
+            {(currentStep === 'upload' || currentStep === 'processing') && (
+              <OcrUploadSection
+                isProcessing={currentStep === 'processing'}
+                uploadedFileName={uploadedFileName}
+                onFilePicked={handleFilePicked}
+                onCancel={onClose}
+              />
+            )}
+
+            {/* Step 3: Review Extracted Schedule Entries (PS-07) */}
+            {currentStep === 'review' && (
+              <OcrReviewTable
+                entries={extractedEntries}
+                onUpdateEntries={setExtractedEntries}
+                onConfirmAndSave={handleConfirmAndSave}
+                onDiscardImport={handleDiscardImport}
+              />
+            )}
           </ScrollView>
         </View>
       </View>
