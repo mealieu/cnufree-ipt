@@ -22,8 +22,17 @@ export interface OcrImageSample {
   entries: OcrExtractedEntry[];
 }
 
+export interface ScheduleFactCheckResult {
+  isSchedule: boolean;
+  confidence: number;
+  detectedFeatures: string[];
+  rejectionReason?: string;
+  extractedEntries?: OcrExtractedEntry[];
+}
+
 export interface OcrScheduleImportScreenProps {
   onClose: () => void;
   onViewMySchedule: () => void;
+  onBackToHome?: () => void;
   onImportSuccess?: (entries: OcrExtractedEntry[]) => void;
 }

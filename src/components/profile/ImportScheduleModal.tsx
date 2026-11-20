@@ -8,6 +8,7 @@ export interface ImportScheduleModalProps {
   onClose: () => void;
   onImported: (entries?: OcrExtractedEntry[]) => void;
   onViewMySchedule?: () => void;
+  onNavigateHome?: () => void;
 }
 
 export const ImportScheduleModal: React.FC<ImportScheduleModalProps> = ({
@@ -15,6 +16,7 @@ export const ImportScheduleModal: React.FC<ImportScheduleModalProps> = ({
   onClose,
   onImported,
   onViewMySchedule,
+  onNavigateHome,
 }) => {
   if (!visible) return null;
 
@@ -27,6 +29,10 @@ export const ImportScheduleModal: React.FC<ImportScheduleModalProps> = ({
     >
       <OcrScheduleImportScreen
         onClose={onClose}
+        onBackToHome={() => {
+          onClose();
+          onNavigateHome?.();
+        }}
         onViewMySchedule={() => {
           onClose();
           onViewMySchedule?.();

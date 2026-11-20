@@ -13,62 +13,121 @@ import { FONTS } from '../constants/typography';
 import { QuickActionIcons } from '../components/ocr/OcrIcons';
 import { OcrUploadSection } from '../components/ocr/OcrUploadSection';
 import { OcrReviewTable } from '../components/ocr/OcrReviewTable';
+import { OcrResultScreen } from '../components/ocr/OcrResultScreen';
+import { OcrConfirmationModal } from '../components/ocr/OcrConfirmationModal';
 import {
   OcrExtractedEntry,
+  OcrImportStep,
+  OcrConfirmationType,
   OcrScheduleImportScreenProps,
 } from '../types/ocrImport';
 import {
   DEFAULT_EXTRACTED_SCHEDULES,
+  factCheckScheduleImage,
 } from '../mock/ocrData';
 
 export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = ({
   onClose,
   onViewMySchedule,
+  onBackToHome,
   onImportSuccess,
 }) => {
-  // Step state: 'upload' | 'processing' | 'review' (PS-07 adds the review table)
-  const [currentStep, setCurrentStep] = useState<'upload' | 'processing' | 'review'>('upload');
+  // Step state: 'upload' | 'processing' | 'review' | 'success' | 'error' (PS-08)
+  const [currentStep, setCurrentStep] = useState<OcrImportStep>('upload');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [uploadedFileSize, setUploadedFileSize] = useState<number | undefined>(undefined);
 
   // Extracted schedule entries that user can edit in PS-07 review screen
   const [extractedEntries, setExtractedEntries] = useState<OcrExtractedEntry[]>(
     DEFAULT_EXTRACTED_SCHEDULES
   );
 
+  // Confirmation modal state (PS-08)
+  const [confirmationType, setConfirmationType] = useState<OcrConfirmationType>(null);
+
+  // Error message for error state (PS-08)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   // When a file is chosen from the user's device
-  const handleFilePicked = (fileName: string) => {
+  const handleFilePicked = (fileName: string, fileSize?: number) => {
     setUploadedFileName(fileName);
+    setUploadedFileSize(fileSize);
     setCurrentStep('processing');
   };
 
-  // Simulate OCR Processing timer and transition to PS-07 Review Screen
+  // Simulate OCR Processing and Fact-Check Verification
   useEffect(() => {
     if (currentStep !== 'processing') return;
 
-    const timer = setTimeout(() => {
-      setCurrentStep('review');
-    }, 2000);
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      // Fact-check if the uploaded picture consists of a schedule
+      const check = await factCheckScheduleImage(
+        uploadedFileName || 'timetable.png',
+        uploadedFileSize
+      );
 
-    return () => clearTimeout(timer);
-  }, [currentStep]);
+      if (!isMounted) return;
 
-  // Review table actions (PS-07)
-  const handleConfirmAndSave = () => {
-    if (onImportSuccess) {
-      onImportSuccess(extractedEntries);
-    }
-    onClose();
+      if (!check.isSchedule) {
+        setErrorMessage(
+          check.rejectionReason ||
+            'The uploaded picture does not consist of a class schedule. Please upload a clear photo of your Certificate of Registration (COR) or timetable.'
+        );
+        setCurrentStep('error');
+      } else {
+        if (check.extractedEntries && check.extractedEntries.length > 0) {
+          setExtractedEntries(check.extractedEntries);
+        }
+        setCurrentStep('review');
+      }
+    }, 1800);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [currentStep, uploadedFileName, uploadedFileSize]);
+
+  // Review table actions (PS-07 -> PS-08 confirmation)
+  const handleConfirmAndSavePress = () => {
+    setConfirmationType('save');
   };
 
-  const handleDiscardImport = () => {
-    setCurrentStep('upload');
+  const handleDiscardImportPress = () => {
+    setConfirmationType('discard');
+  };
+
+  // Confirmation modal callbacks (PS-08)
+  const handleModalConfirm = () => {
+    if (confirmationType === 'save') {
+      setConfirmationType(null);
+      if (onImportSuccess) {
+        onImportSuccess(extractedEntries);
+      }
+      setCurrentStep('success');
+    } else if (confirmationType === 'discard') {
+      setConfirmationType(null);
+      setCurrentStep('upload');
+      setUploadedFileName(null);
+    }
+  };
+
+  const handleModalCancel = () => {
+    setConfirmationType(null);
+  };
+
+  // Error recovery (PS-08)
+  const handleTryAgain = () => {
+    setErrorMessage(null);
     setUploadedFileName(null);
+    setCurrentStep('upload');
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* ================= BACKGROUND: PROFILE HEADER (FIGMA PS-06 / PS-07) ================= */}
+        {/* ================= BACKGROUND: PROFILE HEADER (FIGMA PS-06 / PS-07 / PS-08) ================= */}
         <View style={styles.profileBackgroundHeader}>
           {/* Avatar Circle */}
           <View style={styles.avatarCircle}>
@@ -126,7 +185,7 @@ export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = (
           </View>
         </View>
 
-        {/* ================= FOREGROUND: SAGE GREEN BOTTOM SHEET (PS-06 / PS-07) ================= */}
+        {/* ================= FOREGROUND: SAGE GREEN BOTTOM SHEET (PS-06, PS-07, PS-08) ================= */}
         <View style={styles.bottomSheetCard}>
           {/* Top Center White Handle */}
           <View style={styles.sheetHandleContainer}>
@@ -153,12 +212,50 @@ export const OcrScheduleImportScreen: React.FC<OcrScheduleImportScreenProps> = (
               <OcrReviewTable
                 entries={extractedEntries}
                 onUpdateEntries={setExtractedEntries}
-                onConfirmAndSave={handleConfirmAndSave}
-                onDiscardImport={handleDiscardImport}
+                onConfirmAndSave={handleConfirmAndSavePress}
+                onDiscardImport={handleDiscardImportPress}
+              />
+            )}
+
+            {/* Step 4: Success State (PS-08) */}
+            {currentStep === 'success' && (
+              <OcrResultScreen
+                isSuccess={true}
+                importedCount={extractedEntries.length}
+                onViewMySchedule={onViewMySchedule}
+                onBackToHome={() => {
+                  if (onBackToHome) {
+                    onBackToHome();
+                  } else {
+                    onClose();
+                  }
+                }}
+                onTryAgain={handleTryAgain}
+                onCancel={onClose}
+              />
+            )}
+
+            {/* Step 5: Error State (PS-08) */}
+            {currentStep === 'error' && (
+              <OcrResultScreen
+                isSuccess={false}
+                errorMessage={errorMessage || undefined}
+                onViewMySchedule={onViewMySchedule}
+                onBackToHome={onClose}
+                onTryAgain={handleTryAgain}
+                onCancel={onClose}
               />
             )}
           </ScrollView>
         </View>
+
+        {/* ================= CONFIRMATION DIALOG MODAL (PS-08) ================= */}
+        <OcrConfirmationModal
+          type={confirmationType}
+          entriesCount={extractedEntries.length}
+          onConfirm={handleModalConfirm}
+          onCancel={handleModalCancel}
+        />
       </View>
     </SafeAreaView>
   );

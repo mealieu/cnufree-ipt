@@ -149,6 +149,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
           setIsOcrImportOpen(false);
           setActiveTab('home');
         }}
+        onBackToHome={() => {
+          setIsOcrImportOpen(false);
+          setActiveTab('home');
+        }}
         onViewMySchedule={() => {
           setIsOcrImportOpen(false);
           setActiveTab('home');

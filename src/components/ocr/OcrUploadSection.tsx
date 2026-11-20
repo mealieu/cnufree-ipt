@@ -13,7 +13,7 @@ import { UploadCloudIcon, RadialSpokeSpinner } from './OcrIcons';
 interface OcrUploadSectionProps {
   isProcessing: boolean;
   uploadedFileName?: string | null;
-  onFilePicked: (fileName: string) => void;
+  onFilePicked: (fileName: string, fileSize?: number) => void;
   onCancel: () => void;
 }
 
@@ -38,7 +38,7 @@ export const OcrUploadSection: React.FC<OcrUploadSectionProps> = ({
         const target = event.target as HTMLInputElement;
         const file = target?.files?.[0];
         if (file) {
-          onFilePicked(file.name);
+          onFilePicked(file.name, file.size);
         }
         document.body.removeChild(fileInput);
       };
@@ -65,8 +65,8 @@ export const OcrUploadSection: React.FC<OcrUploadSectionProps> = ({
         {isProcessing && (
           <Text style={styles.processingText}>
             {uploadedFileName
-              ? `Processing ${uploadedFileName}...`
-              : 'Processing schedule...'}
+              ? `Fact-checking & extracting ${uploadedFileName}...`
+              : 'Fact-checking & extracting schedule...'}
           </Text>
         )}
       </View>
