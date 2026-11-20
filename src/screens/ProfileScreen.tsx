@@ -27,6 +27,7 @@ import {
 import { AddScheduleModal } from '../components/profile/AddScheduleModal';
 import { ImportScheduleModal } from '../components/profile/ImportScheduleModal';
 import { NotificationSettingsModal, NotificationPreferences } from '../components/profile/NotificationSettingsModal';
+import { GroupPermissionsModal, GroupPermissionEntity } from '../components/profile/GroupPermissionsModal';
 import { LogoutConfirmModal } from '../components/profile/LogoutConfirmModal';
 import { PersonalScheduleModal } from '../components/personalSchedule/PersonalScheduleModal';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
@@ -87,6 +88,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     friendRequestAccepted: true,
     friendsScheduleUpdates: true,
   });
+  const [isGroupPermissionsVisible, setIsGroupPermissionsVisible] = useState(false);
+  const [groupPermissions, setGroupPermissions] = useState<GroupPermissionEntity[]>([]);
 
   // Subscribe to live profile updates
   useEffect(() => {
@@ -141,7 +144,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         setIsSharedLinksVisible(true);
         break;
       case 'friend_groups_settings':
-        onNavigateTab?.('friends');
+        setIsGroupPermissionsVisible(true);
         break;
       case 'notifications_settings':
         setIsNotificationSettingsVisible(true);
@@ -341,7 +344,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }}
       />
 
-      {/* 7. Logout Confirmation Modal */}
+      {/* 7. Friend Group Permissions Modal (Figma UI-45 / PS-12) */}
+      <GroupPermissionsModal
+        visible={isGroupPermissionsVisible}
+        initialEntities={groupPermissions.length > 0 ? groupPermissions : undefined}
+        onClose={() => setIsGroupPermissionsVisible(false)}
+        onSave={(updatedEntities: GroupPermissionEntity[]) => {
+          setGroupPermissions(updatedEntities);
+          showFeedback(
+            `Group permissions updated for ${updatedEntities.length} person${
+              updatedEntities.length === 1 ? '' : 's'
+            } & groups!`
+          );
+        }}
+      />
+
+      {/* 8. Logout Confirmation Modal */}
       <LogoutConfirmModal
         visible={isLogoutModalVisible}
         isSubmitting={isLoggingOut}

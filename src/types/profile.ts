@@ -13,6 +13,22 @@ export interface UserProfileData {
   selectedGroupIds?: string[];
   sharedLinkConfig?: SharedLinkConfig;
   notificationPreferences?: NotificationPreferences;
+  groupPermissionsConfig?: GroupPermissionsConfig;
+}
+
+export type GroupAccessLevel = 'full_view' | 'free_only' | 'busy_only';
+
+export interface GroupPermissionEntity {
+  id: string;
+  name: string;
+  handle?: string;
+  isGroup?: boolean;
+  accessLevel: GroupAccessLevel;
+  avatarInitials?: string;
+}
+
+export interface GroupPermissionsConfig {
+  entities: GroupPermissionEntity[];
 }
 
 export interface NotificationPreferences {
