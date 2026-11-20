@@ -880,4 +880,81 @@ export const styles = StyleSheet.create({
     fontSize: 15.5,
     color: '#FFFFFF',
   },
+
+  /* Figma Notifications Settings Styles (PS-11 / UI-44) */
+  notificationCard: {
+    backgroundColor: '#526653',
+    borderRadius: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    gap: 16,
+    marginBottom: 20,
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  notificationBadge: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    minWidth: 175,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1.5,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+      },
+    }),
+  },
+  notificationBadgeText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15.5,
+    color: '#151F17',
+  },
+  notificationSwitchPill: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#8FA990',
+    padding: 3,
+    justifyContent: 'center',
+  },
+  notificationSwitchPillOff: {
+    backgroundColor: '#3C4D3D',
+  },
+  notificationSwitchThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'flex-end',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 1.5,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.15)',
+      },
+    }),
+  },
+  notificationSwitchThumbOff: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#A0B3A1',
+  },
 });

@@ -26,6 +26,7 @@ import {
 } from '../components/profile/SharedLinksModal';
 import { AddScheduleModal } from '../components/profile/AddScheduleModal';
 import { ImportScheduleModal } from '../components/profile/ImportScheduleModal';
+import { NotificationSettingsModal, NotificationPreferences } from '../components/profile/NotificationSettingsModal';
 import { LogoutConfirmModal } from '../components/profile/LogoutConfirmModal';
 import { PersonalScheduleModal } from '../components/personalSchedule/PersonalScheduleModal';
 import { BottomNavBar } from '../components/navigation/BottomNavBar';
@@ -80,6 +81,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isImportScheduleVisible, setIsImportScheduleVisible] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isNotificationSettingsVisible, setIsNotificationSettingsVisible] = useState(false);
+  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({
+    newFriendRequests: true,
+    friendRequestAccepted: true,
+    friendsScheduleUpdates: true,
+  });
 
   // Subscribe to live profile updates
   useEffect(() => {
@@ -137,7 +144,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onNavigateTab?.('friends');
         break;
       case 'notifications_settings':
-        onNavigateTab?.('notifications');
+        setIsNotificationSettingsVisible(true);
         break;
       case 'delete_account':
         Alert.alert(
@@ -323,7 +330,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onNavigateHome={() => onNavigateTab?.('home')}
       />
 
-      {/* 6. Logout Confirmation Modal */}
+      {/* 6. Notifications Settings Modal (Figma UI-44 / PS-11) */}
+      <NotificationSettingsModal
+        visible={isNotificationSettingsVisible}
+        initialPreferences={notificationPreferences}
+        onClose={() => setIsNotificationSettingsVisible(false)}
+        onSave={(updatedPrefs: NotificationPreferences) => {
+          setNotificationPreferences(updatedPrefs);
+          showFeedback('Notification preferences updated successfully!');
+        }}
+      />
+
+      {/* 7. Logout Confirmation Modal */}
       <LogoutConfirmModal
         visible={isLogoutModalVisible}
         isSubmitting={isLoggingOut}

@@ -11,6 +11,14 @@ export interface UserProfileData {
   scheduleVisibility?: VisibilityOption;
   selectedFriendIds?: string[];
   selectedGroupIds?: string[];
+  sharedLinkConfig?: SharedLinkConfig;
+  notificationPreferences?: NotificationPreferences;
+}
+
+export interface NotificationPreferences {
+  newFriendRequests: boolean;
+  friendRequestAccepted: boolean;
+  friendsScheduleUpdates: boolean;
 }
 
 export type VisibilityOption =
