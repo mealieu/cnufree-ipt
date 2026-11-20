@@ -8,6 +8,22 @@ export interface UserProfileData {
   avatarUrl?: string;
   initials?: string;
   bio?: string;
+  scheduleVisibility?: VisibilityOption;
+  selectedFriendIds?: string[];
+  selectedGroupIds?: string[];
+}
+
+export type VisibilityOption =
+  | 'only_me'
+  | 'friends_only'
+  | 'selected_friends'
+  | 'private'
+  | 'friends'
+  | 'public';
+
+export interface ScheduleVisibilityDetails {
+  selectedFriendIds: string[];
+  selectedGroupIds: string[];
 }
 
 export interface UpdateProfilePayload {

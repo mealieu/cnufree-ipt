@@ -15,7 +15,11 @@ import { authService } from '../services/authService';
 import { ProfileQuickActions } from '../components/profile/ProfileQuickActions';
 import { ProfileSettingsSection } from '../components/profile/ProfileSettingsSection';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
-import { ScheduleVisibilityModal, VisibilityOption } from '../components/profile/ScheduleVisibilityModal';
+import {
+  ScheduleVisibilityModal,
+  VisibilityOption,
+  ScheduleVisibilityDetails,
+} from '../components/profile/ScheduleVisibilityModal';
 import { SharedLinksModal } from '../components/profile/SharedLinksModal';
 import { AddScheduleModal } from '../components/profile/AddScheduleModal';
 import { ImportScheduleModal } from '../components/profile/ImportScheduleModal';
@@ -61,7 +65,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isMyScheduleVisible, setIsMyScheduleVisible] = useState(false);
   const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
   const [isVisibilityModalVisible, setIsVisibilityModalVisible] = useState(false);
-  const [currentVisibility, setCurrentVisibility] = useState<VisibilityOption>('friends');
+  const [currentVisibility, setCurrentVisibility] = useState<VisibilityOption>('friends_only');
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>(['cf-1', 'cf-2']);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(['fg-it-pwends']);
   const [isSharedLinksVisible, setIsSharedLinksVisible] = useState(false);
   const [isAddScheduleVisible, setIsAddScheduleVisible] = useState(false);
   const [isImportScheduleVisible, setIsImportScheduleVisible] = useState(false);
@@ -237,22 +243,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }}
       />
 
-      {/* 2. Schedule Visibility / Privacy Settings Modal */}
+      {/* 2. Schedule Visibility / Privacy Settings Modal (Figma PS-09) */}
       <ScheduleVisibilityModal
         visible={isVisibilityModalVisible}
         currentVisibility={currentVisibility}
+        initialSelectedFriendIds={selectedFriendIds}
+        initialSelectedGroupIds={selectedGroupIds}
         onClose={() => setIsVisibilityModalVisible(false)}
-        onSave={(newVisibility: VisibilityOption) => {
+        onSave={(newVisibility: VisibilityOption, details?: ScheduleVisibilityDetails) => {
           setCurrentVisibility(newVisibility);
-          showFeedback(
-            `Visibility updated to: ${
-              newVisibility === 'friends'
-                ? 'Accepted Friends Only'
-                : newVisibility === 'public'
-                ? 'Campus Community (Public)'
-                : 'Private (Only Me)'
-            }`
-          );
+          if (details) {
+            setSelectedFriendIds(details.selectedFriendIds);
+            setSelectedGroupIds(details.selectedGroupIds);
+          }
+          let feedback = 'Only Me (Private)';
+          if (newVisibility === 'friends_only' || newVisibility === 'friends') {
+            feedback = 'Friends Only';
+          } else if (newVisibility === 'selected_friends' || newVisibility === 'public') {
+            const fCount = details?.selectedFriendIds.length ?? selectedFriendIds.length;
+            const gCount = details?.selectedGroupIds.length ?? selectedGroupIds.length;
+            feedback = `Selected Friends (${fCount} friend${fCount === 1 ? '' : 's'}, ${gCount} group${gCount === 1 ? '' : 's'})`;
+          }
+          showFeedback(`Schedule visibility set to: ${feedback}`);
         }}
       />
 
