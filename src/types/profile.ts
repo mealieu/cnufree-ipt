@@ -26,6 +26,34 @@ export interface ScheduleVisibilityDetails {
   selectedGroupIds: string[];
 }
 
+export type SharedLinkPermission =
+  | 'full_schedule'
+  | 'free_busy_only'
+  | 'specific_hours';
+
+export type SharedLinkExpiration =
+  | '1_hour'
+  | '24_hours'
+  | '7_days'
+  | '30_days'
+  | 'custom'
+  | 'never';
+
+export interface SharedLinkSpecificHoursConfig {
+  startHour: string;
+  endHour: string;
+  days?: string[];
+}
+
+export interface SharedLinkConfig {
+  permission: SharedLinkPermission;
+  expiration: SharedLinkExpiration;
+  expirationDate?: string;
+  specificHours?: SharedLinkSpecificHoursConfig;
+  customExpirationLabel?: string;
+  isEnabled?: boolean;
+}
+
 export interface UpdateProfilePayload {
   firstName: string;
   lastName: string;

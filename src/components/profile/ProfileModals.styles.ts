@@ -583,4 +583,301 @@ export const styles = StyleSheet.create({
     backgroundColor: '#1A5A31',
     borderColor: '#1A5A31',
   },
+
+  /* Figma Shared Link Permissions & Expiration Styles (PS-10 / UI-43) */
+  shareScheduleTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 24,
+    color: '#151F17',
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  shareScheduleSubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 13.5,
+    color: '#243326',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  shareUrlPill: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#4E614F',
+    height: 48,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1.5 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1.5,
+      },
+      web: {
+        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
+      },
+    }),
+  },
+  shareUrlText: {
+    fontFamily: FONTS.regular,
+    fontSize: 12.5,
+    color: '#1E2B20',
+    flex: 1,
+    marginRight: 8,
+  },
+  shareUrlCopyBtn: {
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareCard: {
+    backgroundColor: '#526653',
+    borderRadius: 22,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  shareCardTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 14.5,
+    color: '#FFFFFF',
+    marginBottom: 14,
+  },
+  shareOptionsStack: {
+    gap: 14,
+  },
+  shareOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  shareBadge: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    minWidth: 175,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1.5,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+      },
+    }),
+  },
+  shareBadgeText: {
+    fontFamily: FONTS.bold,
+    fontSize: 16,
+    color: '#151F17',
+  },
+  shareRadioCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2.2,
+    borderColor: '#1D2A1F',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareRadioCircleSelected: {
+    backgroundColor: '#151F17',
+    borderColor: '#151F17',
+  },
+  dropdownTrigger: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    height: 46,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1.5,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+      },
+    }),
+  },
+  dropdownTriggerText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15.5,
+    color: '#151F17',
+  },
+  dropdownMenu: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#DFE5DE',
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F3EF',
+  },
+  dropdownItemText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: '#151F17',
+  },
+  dropdownItemTextSelected: {
+    fontFamily: FONTS.bold,
+    color: '#1A5A31',
+  },
+  specificHoursSubCard: {
+    backgroundColor: '#617562',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+    gap: 10,
+  },
+  specificHoursHeader: {
+    fontFamily: FONTS.bold,
+    fontSize: 12.5,
+    color: '#FFFFFF',
+  },
+  specificHoursRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  specificHoursInputBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    flex: 1,
+    alignItems: 'center',
+  },
+  specificHoursInputText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    color: '#151F17',
+  },
+  specificHoursToText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  specificHoursDayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  specificHoursDayChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  specificHoursDayChipActive: {
+    backgroundColor: '#151F17',
+  },
+  specificHoursDayText: {
+    fontFamily: FONTS.bold,
+    fontSize: 12,
+    color: '#151F17',
+  },
+  specificHoursDayTextActive: {
+    color: '#FFFFFF',
+  },
+  shareBackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  shareButtonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  shareCancelBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    minWidth: 120,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+      },
+    }),
+  },
+  shareCancelBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15.5,
+    color: '#151F17',
+  },
+  shareSaveBtn: {
+    backgroundColor: '#526653',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 36,
+    minWidth: 120,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+      },
+    }),
+  },
+  shareSaveBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15.5,
+    color: '#FFFFFF',
+  },
 });

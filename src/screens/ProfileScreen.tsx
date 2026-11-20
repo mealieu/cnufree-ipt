@@ -20,7 +20,10 @@ import {
   VisibilityOption,
   ScheduleVisibilityDetails,
 } from '../components/profile/ScheduleVisibilityModal';
-import { SharedLinksModal } from '../components/profile/SharedLinksModal';
+import {
+  SharedLinksModal,
+  SharedLinkConfig,
+} from '../components/profile/SharedLinksModal';
 import { AddScheduleModal } from '../components/profile/AddScheduleModal';
 import { ImportScheduleModal } from '../components/profile/ImportScheduleModal';
 import { LogoutConfirmModal } from '../components/profile/LogoutConfirmModal';
@@ -69,6 +72,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>(['cf-1', 'cf-2']);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(['fg-it-pwends']);
   const [isSharedLinksVisible, setIsSharedLinksVisible] = useState(false);
+  const [sharedLinkConfig, setSharedLinkConfig] = useState<SharedLinkConfig>({
+    permission: 'full_schedule',
+    expiration: '7_days',
+  });
   const [isAddScheduleVisible, setIsAddScheduleVisible] = useState(false);
   const [isImportScheduleVisible, setIsImportScheduleVisible] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
@@ -268,11 +275,32 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         }}
       />
 
-      {/* 3. Shared Links Modal */}
+      {/* 3. Shared Links Modal (Figma UI-43 / PS-10) */}
       <SharedLinksModal
         visible={isSharedLinksVisible}
         username={userProfile.username}
+        initialConfig={sharedLinkConfig}
         onClose={() => setIsSharedLinksVisible(false)}
+        onSave={(config: SharedLinkConfig) => {
+          setSharedLinkConfig(config);
+          const permLabel =
+            config.permission === 'full_schedule'
+              ? 'Full Schedule'
+              : config.permission === 'free_busy_only'
+              ? 'Free/Busy Only'
+              : 'Specific Hours';
+          const expLabel =
+            config.expiration === '1_hour'
+              ? '1 hour'
+              : config.expiration === '24_hours'
+              ? '24 hours'
+              : config.expiration === '7_days'
+              ? '7 days'
+              : config.expiration === '30_days'
+              ? '30 days'
+              : 'Never';
+          showFeedback(`Shared link saved: ${permLabel} · Expires in ${expLabel}`);
+        }}
       />
 
       {/* 4. Add Schedule Block Modal (PS-05) */}
