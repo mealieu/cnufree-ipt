@@ -279,6 +279,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onImported={() => {
           showFeedback('Schedule imported and synced successfully!');
         }}
+        onViewMySchedule={() => setIsMyScheduleVisible(true)}
       />
 
       {/* 6. Logout Confirmation Modal */}

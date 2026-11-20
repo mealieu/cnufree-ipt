@@ -146,4 +146,18 @@ export const COLORS = {
   notifDialogPrimaryBtnBg: '#384637',
   notifToastDarkBg: '#1E4635',
   notifToastBorder: '#3B7A57',
+
+  // OCR Schedule Import Tokens (PS-06, PS-07, PS-08)
+  ocrSheetBg: '#829A81',
+  ocrDarkBtnBg: '#566A57',
+  ocrDarkBtnPressed: '#485A49',
+  ocrDarkFrameBg: '#506552',
+  ocrTableHeaderBg: '#AEC1B0',
+  ocrTableBorder: '#3C4D3E',
+  ocrTableRowBorder: '#E0E7DE',
+  ocrCheckmarkGreen: '#AEC1B0',
+  ocrCancelBtnBg: '#FFFFFF',
+  ocrCancelBtnText: '#121A14',
+  ocrHandleColor: '#FFFFFF',
+  ocrBadgeCircleBg: '#566A57',
 };

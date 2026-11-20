@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   View,
+  Text,
+  TouchableOpacity,
   ScrollView,
   StyleSheet,
   SafeAreaView,
@@ -9,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { COLORS } from '../constants/colors';
+import { FONTS } from '../constants/typography';
 import { HeaderGreeting } from '../components/dashboard/HeaderGreeting';
 import { ScheduleSummaryCard } from '../components/dashboard/ScheduleSummaryCard';
 import { FriendGroupFilter } from '../components/dashboard/FriendGroupFilter';
@@ -42,6 +45,9 @@ import { SharedScheduleScreen } from './SharedScheduleScreen';
 import { NotificationsScreen } from './NotificationsScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { TabId } from '../types/navigation';
+// TODO: [TEMP HARNESS FOR PS-06 - REMOVE ON MERGE]
+import { OcrScheduleImportScreen } from './OcrScheduleImportScreen';
+import { UploadCloudIcon } from '../components/ocr/OcrIcons';
 
 export interface HomeScreenProps {
   onLogout?: () => void;
@@ -51,6 +57,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
 
   // State
   const [activeTab, setActiveTab] = useState<TabId>('home');
+  // TODO: [TEMP HARNESS FOR PS-06 - REMOVE ON MERGE]
+  const [isOcrImportOpen, setIsOcrImportOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<FriendGroupId>('all');
   const [scheduleActivities] = useState(INITIAL_SCHEDULE_ACTIVITIES);
   const [isEmptyDemoActive, setIsEmptyDemoActive] = useState(false);
@@ -133,6 +141,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     );
   }
 
+  // TODO: [TEMP HARNESS FOR PS-06 - REMOVE ON MERGE]
+  if (isOcrImportOpen) {
+    return (
+      <OcrScheduleImportScreen
+        onClose={() => {
+          setIsOcrImportOpen(false);
+          setActiveTab('home');
+        }}
+        onViewMySchedule={() => {
+          setIsOcrImportOpen(false);
+          setActiveTab('home');
+          setViewingSchedulePerson('me');
+        }}
+      />
+    );
+  }
+
   // If viewing personal schedule (PS-03 / HS-05)
   if (viewingSchedulePerson === 'me') {
     return (
@@ -190,6 +215,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
         <View style={styles.contentContainer}>
           {/* 1. Personalized Greeting and Date */}
           <HeaderGreeting userName={CURRENT_USER.name} />
+
+          {/* TODO: [TEMP HARNESS FOR PS-06 - REMOVE ON MERGE] */}
+          <TouchableOpacity
+            style={styles.ocrHarnessBanner}
+            onPress={() => setIsOcrImportOpen(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Open OCR Schedule Import"
+          >
+            <View style={styles.ocrHarnessIconWrap}>
+              <UploadCloudIcon size={18} color={COLORS.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.ocrHarnessTitle}>Import Schedule via OCR (PS-06)</Text>
+              <Text style={styles.ocrHarnessSubtitle}>Upload timetable, preview, review & confirm</Text>
+            </View>
+            <Text style={styles.ocrHarnessArrow}>›</Text>
+          </TouchableOpacity>
 
           {/* 2. Today's Schedule Card */}
           <ScheduleSummaryCard
@@ -301,5 +344,47 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     alignSelf: 'center',
+  },
+  ocrHarnessBanner: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: '#829C83',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#4A5E4C',
+  },
+  ocrHarnessIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#566A57',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ocrHarnessTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    color: COLORS.white,
+  },
+  ocrHarnessSubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 11,
+    color: '#E8F0E6',
+    marginTop: 1,
+  },
+  ocrHarnessArrow: {
+    fontFamily: FONTS.bold,
+    fontSize: 18,
+    color: COLORS.white,
   },
 });
