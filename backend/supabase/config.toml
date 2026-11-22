@@ -1,0 +1,17 @@
+# Supabase CLI Configuration for CNU Free Backend
+# Note: Local Docker is not required when deploying directly to Supabase Cloud via:
+#   npx supabase link --project-ref <SUPABASE_PROJECT_ID>
+#   npx supabase db push
+
+project_id = "cnufree-backend"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
