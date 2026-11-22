@@ -42,6 +42,7 @@ backend/.env.*
 !backend/.env.example
 backend/node_modules/
 backend/dist/
+backend/supabase/.temp/
 
 # typescript
 *.tsbuildinfo
