@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { profileRouter } from './profile';
 import { schedulesRouter } from './schedules';
+import { friendsRouter } from './friends';
 
 const apiRouter = Router();
 
@@ -46,7 +47,8 @@ apiRouter.get(
 apiRouter.use('/profile', profileRouter);
 // [BE-05] Personal Schedule CRUD APIs
 apiRouter.use('/schedules', schedulesRouter);
-// [BE-06] apiRouter.use('/friends', friendsRouter);
+// [BE-06] Friend Discovery & Connection APIs
+apiRouter.use('/friends', friendsRouter);
 // [BE-07] apiRouter.use('/groups', groupsRouter);
 // [BE-08] apiRouter.use('/availability', availabilityRouter);
 // [BE-10] apiRouter.use('/ocr', ocrRouter);
