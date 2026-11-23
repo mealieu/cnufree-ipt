@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
+import { profileRouter } from './profile';
 
 const apiRouter = Router();
 
@@ -40,7 +41,8 @@ apiRouter.get(
 // ----------------------------------------------------------------------------
 // Feature Router Mount Points for Upcoming Backend Tickets ([BE-04]–[BE-12])
 // ----------------------------------------------------------------------------
-// [BE-04] apiRouter.use('/profile', profileRouter);
+// [BE-04] User Profile & Settings APIs
+apiRouter.use('/profile', profileRouter);
 // [BE-05] apiRouter.use('/schedules', schedulesRouter);
 // [BE-06] apiRouter.use('/friends', friendsRouter);
 // [BE-07] apiRouter.use('/groups', groupsRouter);
