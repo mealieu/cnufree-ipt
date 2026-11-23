@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { profileRouter } from './profile';
+import { schedulesRouter } from './schedules';
 
 const apiRouter = Router();
 
@@ -43,7 +44,8 @@ apiRouter.get(
 // ----------------------------------------------------------------------------
 // [BE-04] User Profile & Settings APIs
 apiRouter.use('/profile', profileRouter);
-// [BE-05] apiRouter.use('/schedules', schedulesRouter);
+// [BE-05] Personal Schedule CRUD APIs
+apiRouter.use('/schedules', schedulesRouter);
 // [BE-06] apiRouter.use('/friends', friendsRouter);
 // [BE-07] apiRouter.use('/groups', groupsRouter);
 // [BE-08] apiRouter.use('/availability', availabilityRouter);
