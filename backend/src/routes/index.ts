@@ -5,6 +5,7 @@ import { profileRouter } from './profile';
 import { schedulesRouter } from './schedules';
 import { friendsRouter } from './friends';
 import { groupsRouter } from './groups';
+import { availabilityRouter } from './availability';
 
 const apiRouter = Router();
 
@@ -52,7 +53,8 @@ apiRouter.use('/schedules', schedulesRouter);
 apiRouter.use('/friends', friendsRouter);
 // [BE-07] Friend Group management APIs
 apiRouter.use('/groups', groupsRouter);
-// [BE-08] apiRouter.use('/availability', availabilityRouter);
+// [BE-08] & [BE-09] Availability, Overlap Engine & Schedule Permissions APIs
+apiRouter.use('/availability', availabilityRouter);
 // [BE-10] apiRouter.use('/ocr', ocrRouter);
 // [BE-11] apiRouter.use('/notifications', notificationsRouter);
 // [BE-12] apiRouter.use('/shared-links', sharedLinksRouter);
