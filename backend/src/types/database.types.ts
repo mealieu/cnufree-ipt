@@ -454,6 +454,27 @@ export type Database = {
         Args: { p_owner_id: string; p_viewer_id: string }
         Returns: boolean
       }
+      get_friends_schedules_for_date: {
+        Args: {
+          p_date: string
+          p_friend_ids?: string[] | null
+          p_group_id?: string | null
+        }
+        Returns: {
+          access_level: string
+          avatar_url: string | null
+          can_view_schedule: boolean
+          first_name: string
+          friend_id: string
+          full_name: string
+          group_ids: string[]
+          has_any_schedule: boolean
+          last_name: string
+          schedule_visibility: string
+          schedules_json: Json
+          username: string
+        }[]
+      }
       get_schedule_access_level: {
         Args: { p_owner_id: string; p_viewer_id: string }
         Returns: string
