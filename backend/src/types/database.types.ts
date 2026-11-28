@@ -446,7 +446,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      are_friends: {
+        Args: { user_a: string; user_b: string }
+        Returns: boolean
+      }
+      can_view_user_schedule: {
+        Args: { p_owner_id: string; p_viewer_id: string }
+        Returns: boolean
+      }
+      get_schedule_access_level: {
+        Args: { p_owner_id: string; p_viewer_id: string }
+        Returns: string
+      }
+      get_user_schedule_access: {
+        Args: { p_target_user_id: string }
+        Returns: {
+          access_level: string
+          can_view_schedule: boolean
+          has_any_schedule: boolean
+          is_blocked: boolean
+          is_friend: boolean
+          is_self: boolean
+          profile_exists: boolean
+          schedule_visibility: string
+          target_user_id: string
+        }[]
+      }
+      is_blocked_between: {
+        Args: { user_a: string; user_b: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
